@@ -1,0 +1,7 @@
+/bin/
+/.gradle/
+
+# specific for Eclipse
+.metadata
+.classpath
+.project
