@@ -18,4 +18,9 @@ public class ConcatStringGraphNode extends StringGraphNode{
         this.value = this.children.size();
     }
 
+	@Override
+	public String toString() {
+		return "Concat/"+value+" ["+ children != null ? children.toString() : "" +"]";
+	}
+    
 }

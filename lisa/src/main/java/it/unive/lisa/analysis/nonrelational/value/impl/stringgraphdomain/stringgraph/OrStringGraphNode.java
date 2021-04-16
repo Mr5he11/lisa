@@ -16,4 +16,9 @@ public class OrStringGraphNode extends StringGraphNode {
         this.parents.addAll(parents);
         this.parents.addAll(children);
     }
+    
+    @Override
+	public String toString() {
+		return "OR ["+ children != null ? children.toString() : "" +"]";
+	}
 }
