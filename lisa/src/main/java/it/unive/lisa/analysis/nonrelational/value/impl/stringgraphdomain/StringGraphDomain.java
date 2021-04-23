@@ -61,17 +61,10 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	protected StringGraphDomain evalNonNullConstant(Constant constant, ProgramPoint pp) {
 		if (constant.getValue() instanceof String) {
 			String value = (String)constant.getValue();
-			
-			// can be a SimpleNode or a ConcatNode, depending on the length of value  
-			StringGraphNode node = StringGraphNode.create(value);
-			
-			if (this.root == null) {
-				this.root = node;
-			} else {
-				
-				// TODO merge the root with the created node
 
-			}
+			// can be a SimpleNode or a ConcatNode, depending on the length of value
+			StringGraphNode node = StringGraphNode.create(value);
+			return new StringGraphDomain(node);
 		}
 		return super.evalNonNullConstant(constant, pp);
 	}

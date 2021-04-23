@@ -1,0 +1,10 @@
+class sg {
+
+	f0() {
+		def x = "ciao";
+		def y = 0;
+		if (y > 0) {
+		    x = x + " lol";
+		}
+    }
+}
