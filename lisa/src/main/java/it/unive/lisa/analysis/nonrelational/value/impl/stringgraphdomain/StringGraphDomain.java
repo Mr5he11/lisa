@@ -3,6 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConcatStringGraphNode;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.OrStringGraphNode;
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.SimpleStringGraphNode;
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.StringGraphNode;
 import it.unive.lisa.program.cfg.ProgramPoint;
@@ -85,38 +86,51 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			concatNode.addChild(left.root);
 			concatNode.addChild(right.root);
 
-			// TODO add backward-edges from left/right to concatNode?
-			
-			if (this.root == null) {
-				this.root = concatNode;
-			} else {
-				
-				// TODO merge the root with the created node
+			// TODO normalize concatNode
 
-			}
+
+			return new StringGraphDomain(concatNode);
 			
 		}
+		if (BinaryOperator.STRING_CONTAINS == operator) {
+
+			// TODO 4.4.6
+		}
+
 		return super.evalBinaryExpression(operator, left, right, pp);
 	}
 
 	@Override
 	protected StringGraphDomain evalTernaryExpression(TernaryOperator operator, StringGraphDomain left,
 			StringGraphDomain middle, StringGraphDomain right, ProgramPoint pp) {
+
+		if (TernaryOperator.STRING_SUBSTRING == operator) {
+
+			// TODO 4.4.6
+
+		}
+
 		return super.evalTernaryExpression(operator, left, middle, right, pp);
 	}
 	
 	@Override
 	protected StringGraphDomain lubAux(StringGraphDomain other) throws SemanticException {
-		return null;
+		// 4.4.3
+		StringGraphNode orNode = new OrStringGraphNode();
+		orNode.addChild(this.root);
+		orNode.addChild(other.root);
+		return new StringGraphDomain(orNode);
 	}
 
 	@Override
 	protected StringGraphDomain wideningAux(StringGraphDomain other) throws SemanticException {
+		// 4.4.4
 		return null;
 	}
 
 	@Override
 	protected boolean lessOrEqualAux(StringGraphDomain other) throws SemanticException {
+		// 4.4.2
 		return false;
 	}
 

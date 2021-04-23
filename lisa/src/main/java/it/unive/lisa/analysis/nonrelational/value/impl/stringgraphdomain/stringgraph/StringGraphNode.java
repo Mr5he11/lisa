@@ -1,5 +1,6 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,8 +10,8 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringg
 
 public abstract class StringGraphNode {
     protected Object value;
-    protected HashSet<StringGraphNode> children;
-    protected HashSet<StringGraphNode> parents;
+    protected List<StringGraphNode> children;
+    protected List<StringGraphNode> parents;
     
     /**
      * Creates a node starting from the string value parameter.
@@ -35,11 +36,9 @@ public abstract class StringGraphNode {
     	
     	StringGraphNode root = new ConcatStringGraphNode();
 
-    	// TODO add backward-edges from charNodes to root?
-  
     	// Create CONCAT node with all chars of value as children 
     	List<StringGraphNode> charNodes = Stream.of(value.split(""))	// create stream of all characters
-    			.map(c -> new SimpleStringGraphNode(c, null))			// map them to a StringGraphNode. TODO connect them to the root?
+    			.map(c -> new SimpleStringGraphNode(c))			// map them to a StringGraphNode.
     			.collect(Collectors.toList());							// collect as list
     	root.setChildren(charNodes);
     	return root;
@@ -63,18 +62,18 @@ public abstract class StringGraphNode {
     }
 
     public void setChildren(Collection<StringGraphNode> children) {
-        this.children = new HashSet<>(children);
+        this.children = new ArrayList<>(children);
     }
 
     public void setParents(Collection<StringGraphNode> parents) {
-        this.parents = new HashSet<>(parents);
+        this.parents = new ArrayList<>(parents);
     }
 
-    public HashSet<StringGraphNode> getChildren() {
+    public List<StringGraphNode> getChildren() {
         return this.children;
     }
 
-    public HashSet<StringGraphNode> getParents() {
+    public List<StringGraphNode> getParents() {
         return this.parents;
     }
 

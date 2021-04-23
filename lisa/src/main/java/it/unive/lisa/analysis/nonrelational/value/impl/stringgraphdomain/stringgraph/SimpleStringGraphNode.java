@@ -1,5 +1,6 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -22,8 +23,8 @@ public class SimpleStringGraphNode extends StringGraphNode{
 
     public SimpleStringGraphNode() {
         this.value = ConstValue.EMPTY;
-        this.children = new HashSet<>();
-        this.parents = new HashSet<>();
+        this.children = new ArrayList<>();
+        this.parents = new ArrayList<>();
     }
 
     public SimpleStringGraphNode(ConstValue value) {

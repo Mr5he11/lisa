@@ -1,14 +1,14 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 
 public class ConcatStringGraphNode extends StringGraphNode{
 
     public ConcatStringGraphNode() {
         this.value = 0;
-        this.children = new HashSet<>();
-        this.parents = new HashSet<>();
+        this.children = new ArrayList<>();
+        this.parents = new ArrayList<>();
     }
 
     public ConcatStringGraphNode(Collection<StringGraphNode> parents, Collection<StringGraphNode> children) {
@@ -27,7 +27,7 @@ public class ConcatStringGraphNode extends StringGraphNode{
 
     @Override
 	public String toString() {
-		return "Concat/"+value+" ["+ children != null ? children.toString() : "" +"]";
+		return "Concat/"+value+" ["+ (children != null ? children.toString() : "") +"]";
 	}
     
 }
