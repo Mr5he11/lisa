@@ -7,11 +7,7 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringg
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.SimpleStringGraphNode;
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.StringGraphNode;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.BinaryExpression;
-import it.unive.lisa.symbolic.value.BinaryOperator;
-import it.unive.lisa.symbolic.value.Constant;
-import it.unive.lisa.symbolic.value.TernaryOperator;
-import it.unive.lisa.symbolic.value.UnaryOperator;
+import it.unive.lisa.symbolic.value.*;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 
@@ -21,7 +17,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	private StringGraphNode root;
 	
 	public StringGraphDomain() {
-		this(new SimpleStringGraphNode());
+		this(SimpleStringGraphNode.EMPTY);
 	}
 	
 	public StringGraphDomain(StringGraphNode root) {

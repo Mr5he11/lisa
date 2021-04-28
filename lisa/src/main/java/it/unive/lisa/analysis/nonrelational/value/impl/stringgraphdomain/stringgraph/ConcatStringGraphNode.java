@@ -3,7 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class ConcatStringGraphNode extends StringGraphNode{
+public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
     public ConcatStringGraphNode() {
         this.value = 0;

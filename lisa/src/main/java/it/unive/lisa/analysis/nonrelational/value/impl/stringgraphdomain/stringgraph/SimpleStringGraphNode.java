@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
-public class SimpleStringGraphNode extends StringGraphNode{
+public class SimpleStringGraphNode extends StringGraphNode<String> {
 
     enum ConstValue {
         MAX,
@@ -21,34 +21,31 @@ public class SimpleStringGraphNode extends StringGraphNode{
     public static final StringGraphNode MIN = new SimpleStringGraphNode(ConstValue.MIN);
     public static final StringGraphNode EMPTY = new SimpleStringGraphNode(ConstValue.EMPTY);
 
-    public SimpleStringGraphNode() {
-        this.value = ConstValue.EMPTY;
-        this.children = new ArrayList<>();
-        this.parents = new ArrayList<>();
-    }
-
-    public SimpleStringGraphNode(ConstValue value) {
-    	this();
-    	this.value = value;
+    public SimpleStringGraphNode(ConstValue constValue) {
+        this(constValue.name(), false);
     }
 
     public SimpleStringGraphNode(String value) {
-        this();
-        if (value.length() != 1) throw new IllegalArgumentException("Value of SimpleStringGraphNode must be of length 1");
-        this.value = value;
+       this(value,true);
     }
 
     public SimpleStringGraphNode(String value, Collection<StringGraphNode> parents) {
         this(value);
         this.parents.addAll(parents);
     }
-    
+
+    private SimpleStringGraphNode(String value, Boolean checkLen) {
+        if (checkLen) {
+            if (value.length() != 1) throw new IllegalArgumentException("Value of SimpleStringGraphNode must be of length 1");
+        }
+
+        this.value = value;
+        this.children = new ArrayList<>();
+        this.parents = new ArrayList<>();
+    }
 
     @Override
 	public String toString() {
-		if (this.value != null) {
-			return this.value instanceof ConstValue ? ((ConstValue)this.value).name() : this.value.toString();
-		}
-		return null;
+        return this.value;
 	}
 }

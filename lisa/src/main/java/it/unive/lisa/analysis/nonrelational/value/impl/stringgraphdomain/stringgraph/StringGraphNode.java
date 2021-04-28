@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.SimpleStringGraphNode.ConstValue;
-
-public abstract class StringGraphNode {
-    protected Object value;
+public abstract class StringGraphNode<T> {
+    protected T value;
     protected List<StringGraphNode> children;
     protected List<StringGraphNode> parents;
     
@@ -27,7 +25,7 @@ public abstract class StringGraphNode {
     	
     	// Create EMPTY node
     	if (value == null) 
-    		return new SimpleStringGraphNode(ConstValue.EMPTY);
+    		return SimpleStringGraphNode.EMPTY;
     	
     	// Create SIMPLE node with 1 char
     	if (value.length() == 1)
@@ -38,9 +36,10 @@ public abstract class StringGraphNode {
 
     	// Create CONCAT node with all chars of value as children 
     	List<StringGraphNode> charNodes = Stream.of(value.split(""))	// create stream of all characters
-    			.map(c -> new SimpleStringGraphNode(c))			// map them to a StringGraphNode.
+    			.map(c -> new SimpleStringGraphNode(c))					// map them to a StringGraphNode.
     			.collect(Collectors.toList());							// collect as list
     	root.setChildren(charNodes);
+
     	return root;
     }
     
@@ -92,6 +91,10 @@ public abstract class StringGraphNode {
     public void removeParent(StringGraphNode parent) {
         this.parents.remove(parent);
     }
+
+	public T getValue() { return value; }
+
+	public void setValue(T value) { this.value = value; }
 
 	@Override
 	public int hashCode() {

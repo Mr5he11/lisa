@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
-public class OrStringGraphNode extends StringGraphNode {
+public class OrStringGraphNode extends StringGraphNode<Void> {
 
     public OrStringGraphNode() {
         this.value = null;
@@ -20,6 +20,6 @@ public class OrStringGraphNode extends StringGraphNode {
     
     @Override
 	public String toString() {
-		return "OR ["+ children != null ? children.toString() : "" +"]";
+		return "OR ["+ (children != null ? children.toString() : "") +"]";
 	}
 }
