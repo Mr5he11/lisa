@@ -3,25 +3,20 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 public class SimpleStringGraphNode extends StringGraphNode<String> {
-
-    enum ConstValue {
-        MAX,
-        MIN,
-        EMPTY
-    }
     
     /**
-     *  TODO maybe we can remove the {@link ConstValue} enum and use these 3 fields as identifiers of MAX,MIN,EMPTY.
+     *  TODO maybe we can remove the {@link ConstValues} enum and use these 3 fields as identifiers of MAX,MIN,EMPTY.
      *  
      *  in fact, the enum has package visibility, so it is nearly useless 
      */
-    public static final StringGraphNode MAX = new SimpleStringGraphNode(ConstValue.MAX);
-    public static final StringGraphNode MIN = new SimpleStringGraphNode(ConstValue.MIN);
-    public static final StringGraphNode EMPTY = new SimpleStringGraphNode(ConstValue.EMPTY);
+    public static final StringGraphNode MAX = new SimpleStringGraphNode(ConstValues.MAX);
+    public static final StringGraphNode MIN = new SimpleStringGraphNode(ConstValues.MIN);
+    public static final StringGraphNode EMPTY = new SimpleStringGraphNode(ConstValues.EMPTY);
 
-    public SimpleStringGraphNode(ConstValue constValue) {
+    public SimpleStringGraphNode(ConstValues constValue) {
         this(constValue.name(), false);
     }
 
@@ -48,4 +43,16 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
 	public String toString() {
         return this.value;
 	}
+
+	@Override
+    public List<String> getDenotation() {
+        List<String> result = new ArrayList<>();
+        if (this.toString().compareTo(ConstValues.MAX.name()) == 0) {
+            result.add(ConstValues.ALL_STRINGS.name());
+        } else if (this.toString().compareTo(ConstValues.MIN.name()) != 0) {
+            result.add(this.toString());
+        }
+        // this this.value == MIN an empty list should be returned
+        return result;
+    }
 }
