@@ -1,11 +1,10 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
-public class SimpleStringGraphNode extends StringGraphNode<String> {
+public class SimpleStringGraphNode<C extends StringGraphNode<?,C,?, SimpleStringGraphNode<C,P>>, P extends StringGraphNode<?,P, SimpleStringGraphNode<C,P>,?>>
+        extends StringGraphNode<String, SimpleStringGraphNode<C,P>,C,P> {
 
     public SimpleStringGraphNode() {
         super();
@@ -20,10 +19,14 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
     }
 
     @Override
-    protected void addForwardChild(StringGraphNode child) {
+    public void addForwardChild(C child) {
         throw new UnsupportedOperationException("Cannot add forward children to " + this.getClass().getName());
     }
 
+    @Override
+    public void removeChild(C child) {
+        throw new UnsupportedOperationException("Cannot remove child from " + this.getClass().getName());
+    }
 
     @Override
 	public String toString() {

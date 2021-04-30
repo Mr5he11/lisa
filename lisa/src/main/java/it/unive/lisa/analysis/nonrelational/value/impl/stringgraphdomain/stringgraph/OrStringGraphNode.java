@@ -1,28 +1,34 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class OrStringGraphNode extends StringGraphNode<Void> {
+public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNode<C,P>>, P extends StringGraphNode<?,P, OrStringGraphNode<C,P>,?>>
+        extends StringGraphNode<Void, OrStringGraphNode<C,P>,C,P> {
 
     public OrStringGraphNode() {
         super();
         this.value = null;
     }
 
-    public OrStringGraphNode(Collection<StringGraphNode> forwardNodes, Collection<StringGraphNode> backwardNodes) {
+    public OrStringGraphNode(Collection<C> forwardNodes, Collection<C> backwardNodes) {
         this();
-        for (StringGraphNode node : forwardNodes) {
+        for (C node : forwardNodes) {
             this.addForwardChild(node);
         }
-        for (StringGraphNode node : backwardNodes) {
+        for (C node : backwardNodes) {
             this.addBackwardChild(node);
         }
     }
-    
+
+    public OrStringGraphNode(C root1, C root2) {
+        this();
+        addForwardChild(root1);
+        addForwardChild(root2);
+    }
+
     @Override
 	public String toString() {
-        return "OR "
+        return "OR"
                 + getChildren().stream()
                 .map(Object::toString)
                 .collect(Collectors.joining(", ", " [", "]"));
@@ -32,11 +38,7 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     public List<String> getDenotation() {
         List<String> result = new ArrayList<>();
 
-        List<StringGraphNode> union = Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream())
-                .distinct()
-                .collect(Collectors.toList());
-
-        for (StringGraphNode<?> n : union) {
+        for (C n : getChildren()) {
             for (String str : n.getDenotation()) {
                 if (
                         (result.size() == 1 && ConstValues.ALL_STRINGS.name().compareTo(result.get(0)) == 0)

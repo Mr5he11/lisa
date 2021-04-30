@@ -4,12 +4,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class StringGraphNode<T> {
-    protected T value;
-	protected final List<StringGraphNode> forwardNodes;
-	protected final List<StringGraphNode> backwardNodes;
-	protected final List<StringGraphNode> forwardParents;
-	protected final List<StringGraphNode> backwardParents;
+/**
+ *
+ * @param <V> type of Value
+ * @param <T> type of current node
+ * @param <C> type of children nodes of T: it has current node type C and parent node type T
+ * @param <P> type of parent nodes of T: it has current node type P and children node type T
+ */
+public abstract class StringGraphNode
+		<V,
+		T extends StringGraphNode<V, T, C, P>,
+		C extends StringGraphNode<?,C,?,T>,
+		P extends StringGraphNode<?,P,T,?>> {
+
+	protected V value;
+	protected final List<C> forwardNodes;
+	protected final List<C> backwardNodes;
+	protected final List<P> forwardParents;
+	protected final List<P> backwardParents;
 
 	public StringGraphNode() {
 		this.forwardNodes = new ArrayList<>();
@@ -20,35 +32,39 @@ public abstract class StringGraphNode<T> {
 
 	/**
      * Creates a node starting from the string value parameter.
-     * It checks whether the string has only one character, producing a {@link SimpleStringGraphNode} 
-     * or if it has multiple characters. If so, this produces a String Graph with a {@link ConcatStringGraphNode} as root 
+     * It checks whether the string has only one character, producing a {@link SimpleStringGraphNode}
+     * or if it has multiple characters. If so, this produces a String Graph with a {@link ConcatStringGraphNode} as root
      * and all characters of the string as {@link SimpleStringGraphNode} nodes
      *
      * 
      * @param value parameter included in the created {@link StringGraphNode}
-     * @return a {@link SimpleStringGraphNode} or a ConcatNode {@link ConcatStringGraphNode} 
+     * @return a {@link SimpleStringGraphNode} or a ConcatNode {@link ConcatStringGraphNode}
      */
-    public static StringGraphNode create(String value) {
-    	
-    	// Create EMPTY node
-    	if (value == null) 
-    		return new ConstStringGraphNode(ConstValues.EMPTY);
+    public static StringGraphNode<?,?,?,?> create(String value) {
+		StringGraphNode<?,?,?,?> result;
 
-    	// Create SIMPLE node with 1 char
-    	if (value.length() == 1)
-    		return new SimpleStringGraphNode(value);
-    	
-    	
-    	return new ConcatStringGraphNode(value);
+		if (value == null) {
+			// EMPTY node if no value
+			result = new ConstStringGraphNode<>(ConstValues.EMPTY);
+		} else if (value.length() == 1) {
+			// SIMPLE node if 1 char
+			result = new SimpleStringGraphNode<>(value);
+		} else {
+			// CONCAT node if 2+ chars
+			result = new ConcatStringGraphNode<>(value);
+		}
 
-    }
+		return result;
+	}
     
 
     public int getOutDegree() {
         return this.forwardNodes.size() + this.backwardNodes.size();
     }
 
-    public int getInDegree() { return this.forwardParents.size() + this.backwardParents.size(); }
+    public int getInDegree() {
+    	return this.forwardParents.size() + this.backwardParents.size();
+    }
 
     public boolean isLeaf() {
         return this.getOutDegree() == 0;
@@ -58,42 +74,38 @@ public abstract class StringGraphNode<T> {
         return this.forwardParents.isEmpty();
     }
 
-	public List<StringGraphNode> getForwardNodes() {
+	public List<C> getForwardNodes() {
 		return forwardNodes;
 	}
 
-	public List<StringGraphNode> getBackwardNodes() {
+	public List<C> getBackwardNodes() {
 		return backwardNodes;
 	}
 
-	public List<StringGraphNode> getForwardParents() {
+	public List<P> getForwardParents() {
 		return forwardParents;
 	}
 
-	public List<StringGraphNode> getBackwardParents() {
+	public List<P> getBackwardParents() {
 		return backwardParents;
 	}
 
-	protected void addForwardChild(StringGraphNode child) {
+	public void addForwardChild(C child) {
     	this.forwardNodes.add(child);
-        child.addForwardParent(this);
+        child.addForwardParent((T)this);
     }
 
-	protected void addBackwardChild(StringGraphNode child) {
+	public void addBackwardChild(C child) {
     	this.backwardNodes.add(child);
-    	child.addBackwardParent(this);
+    	child.addBackwardParent((T)this);
 	}
 
-    private void addForwardParent(StringGraphNode parent) {
+    protected void addForwardParent(P parent) {
     	this.forwardParents.add(parent);
     }
 
-	private void addBackwardParent(StringGraphNode parent) {
+	protected void addBackwardParent(P parent) {
     	this.backwardParents.add(parent);
-	}
-
-	public List<StringGraphNode> getChildren() {
-    	return Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream()).distinct().collect(Collectors.toList());
 	}
 
 	/**
@@ -101,20 +113,24 @@ public abstract class StringGraphNode<T> {
 	 *
 	 * @param child child node to be removed
 	 */
-    protected void removeChild(StringGraphNode child) {
+	public void removeChild(C child) {
     	if (this.forwardNodes.remove(child) /*|| this.backwardNodes.remove(child)*/) {
-    		child.removeParent(this); /* Luke, I am NOT you father */
+    		child.removeParent((T)this); /* Luke, I am NOT you father */
 		}
     }
 
-    private void removeParent(StringGraphNode parent) {
+    public void removeParent(P parent) {
     	this.forwardParents.remove(parent);
     	/*this.backwardParents.remove(parent);*/
     }
 
-	public T getValue() { return value; }
+	public List<C> getChildren() {
+		return Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream()).distinct().collect(Collectors.toList());
+	}
 
-	public void setValue(T value) { this.value = value; }
+	public V getValue() { return value; }
+
+	public void setValue(V value) { this.value = value; }
 
 	/**
 	 * Produces the denotation of the string graph having root in the current object.
@@ -149,26 +165,12 @@ public abstract class StringGraphNode<T> {
 	 *
 	 * @return true if the node is not part of a infinite loop, false otherwise
 	 */
-	public boolean isFinite(StringGraphNode root) {
-		for (Object el : this.getChildren()) {
-			StringGraphNode child = (StringGraphNode) el;
+	public boolean isFinite(StringGraphNode<?,?,?,?> root) {
+		for (C child : this.getChildren()) {
 			if (root == this || !child.isFinite(root)) {
 				return false;
 			}
 		}
 		return true;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		StringGraphNode<?> that = (StringGraphNode<?>) o;
-		return Objects.equals(value, that.value) && Objects.equals(forwardNodes, that.forwardNodes) && Objects.equals(backwardNodes, that.backwardNodes) && Objects.equals(forwardParents, that.forwardParents) && Objects.equals(backwardParents, that.backwardParents);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(value, forwardNodes, backwardNodes, forwardParents, backwardParents);
 	}
 }

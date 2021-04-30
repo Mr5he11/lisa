@@ -2,25 +2,20 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain;
 
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConcatStringGraphNode;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.OrStringGraphNode;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.SimpleStringGraphNode;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.StringGraphNode;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.*;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.*;
 
-public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
+import java.util.Objects;
 
-	private static final StringGraphDomain TOP = new StringGraphDomain(SimpleStringGraphNode.MAX);
-	private static final StringGraphDomain BOTTOM = new StringGraphDomain(SimpleStringGraphNode.MIN);
-	
-	private StringGraphNode root;
+public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
+	private final StringGraphNode<?,?,?,?> root;
 	
 	public StringGraphDomain() {
-		this(SimpleStringGraphNode.EMPTY);
+		this( new ConstStringGraphNode<>(ConstValues.EMPTY) );
 	}
 	
-	public StringGraphDomain(StringGraphNode root) {
+	public StringGraphDomain(StringGraphNode<?,?,?,?> root) {
 		this.root = root;
 	}
 	
@@ -31,12 +26,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 	@Override
 	public StringGraphDomain top() {
-		return TOP;
+		return new StringGraphDomain(new ConstStringGraphNode<>(ConstValues.MAX));
 	}
 
 	@Override
 	public StringGraphDomain bottom() {
-		return BOTTOM;
+		return new StringGraphDomain(new ConstStringGraphNode<>(ConstValues.MIN));
 	}
 
 	@Override
@@ -58,17 +53,15 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	protected StringGraphDomain evalNonNullConstant(Constant constant, ProgramPoint pp) {
 		if (constant.getValue() instanceof String) {
 			String value = (String)constant.getValue();
-
-			// can be a SimpleNode or a ConcatNode, depending on the length of value
-			StringGraphNode node = StringGraphNode.create(value);
+			StringGraphNode<?,?,?,?> node = StringGraphNode.create(value);
 			return new StringGraphDomain(node);
 		}
-		return super.evalNonNullConstant(constant, pp);
+		return bottom();
 	}
 
 	@Override
 	protected StringGraphDomain evalUnaryExpression(UnaryOperator operator, StringGraphDomain arg, ProgramPoint pp) {
-		return super.evalUnaryExpression(operator, arg, pp);
+		return bottom();
 	}
 
 	@Override
@@ -76,24 +69,22 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			StringGraphDomain right, ProgramPoint pp) {
 		
 		if (BinaryOperator.STRING_CONCAT == operator) {
-			
-			ConcatStringGraphNode concatNode = new ConcatStringGraphNode();
-			
-			concatNode.addChild(left.root);
-			concatNode.addChild(right.root);
+
+			StringGraphNode<?,?,?,?> concatNode = new ConcatStringGraphNode(left.root, right.root);
 
 			// TODO normalize concatNode
-
 
 			return new StringGraphDomain(concatNode);
 			
 		}
+
 		if (BinaryOperator.STRING_CONTAINS == operator) {
 
 			// TODO 4.4.6
+
 		}
 
-		return super.evalBinaryExpression(operator, left, right, pp);
+		return bottom();
 	}
 
 	@Override
@@ -106,15 +97,14 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 		}
 
-		return super.evalTernaryExpression(operator, left, middle, right, pp);
+		return bottom();
 	}
 	
 	@Override
 	protected StringGraphDomain lubAux(StringGraphDomain other) throws SemanticException {
 		// 4.4.3
-		StringGraphNode orNode = new OrStringGraphNode();
-		orNode.addChild(this.root);
-		orNode.addChild(other.root);
+		StringGraphNode<?,?,?,?> orNode = new OrStringGraphNode(this.root, other.root);
+
 		return new StringGraphDomain(orNode);
 	}
 
@@ -131,27 +121,15 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((root == null) ? 0 : root.hashCode());
-		return result;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		StringGraphDomain that = (StringGraphDomain) o;
+		return Objects.equals(root, that.root);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		StringGraphDomain other = (StringGraphDomain) obj;
-		if (root == null) {
-			if (other.root != null)
-				return false;
-		} else if (!root.equals(other.root))
-			return false;
-		return true;
-	}    
+	public int hashCode() {
+		return Objects.hash(root);
+	}
 }

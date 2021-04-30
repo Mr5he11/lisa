@@ -1,13 +1,10 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class ConcatStringGraphNode extends StringGraphNode<Integer> {
+public class ConcatStringGraphNode<C extends StringGraphNode<?,C,?, ConcatStringGraphNode<C,P>>, P extends StringGraphNode<?,P, ConcatStringGraphNode<C,P>,?>>
+        extends StringGraphNode<Integer, ConcatStringGraphNode<C,P>,C,P> {
 
     public ConcatStringGraphNode() {
         super();
@@ -15,46 +12,48 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     }
 
     public ConcatStringGraphNode(String value) {
-        super();
+        this();
         for (String s: value.split("")) {
-            addForwardChild(new SimpleStringGraphNode(s));
+            addForwardChild( (C) new SimpleStringGraphNode(s) );
         }
     }
 
+    public ConcatStringGraphNode(C root1, C root2) {
+        this();
+        addForwardChild(root1);
+        addForwardChild(root2);
+    }
+
     @Override
-    protected void addForwardChild(StringGraphNode child) {
+    public void addForwardChild(C child) {
         super.addForwardChild(child);
         this.value += 1;
     }
 
     @Override
-    protected void addBackwardChild(StringGraphNode child) {
+    public void addBackwardChild(C child) {
         super.addBackwardChild(child);
         this.value += 1;
     }
 
     @Override
-    protected void removeChild(StringGraphNode child) {
+    public void removeChild(C child) {
         super.removeChild(child);
         this.value -= 1;
     }
 
     @Override
 	public String toString() {
-		return "Concat/" + value
-                + getChildren().stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", ", " [", "]"));
+		return "Concat/" + value;
 	}
 
 	@Override
     public List<String> getDenotation() {
         String s = "";
         List<String> result = new ArrayList<>();
-        for (StringGraphNode n : this.getChildren()) {
+        for (C n : this.getChildren()) {
             if (n.isFinite(n)) {
-                for (Object el : n.getDenotation()) {
-                    String str = (String) el;
+                for (String str : n.getDenotation()) {
                     // Concat happens only if none of the child nodes is TOP, otherwise result is all possible strings
                     if (ConstValues.ALL_STRINGS.name().compareTo(s) != 0 && ConstValues.ALL_STRINGS.name().compareTo(str) != 0 )
                         s = s.concat(str);
@@ -66,5 +65,4 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         result.add(s);
         return result;
     }
-    
 }
