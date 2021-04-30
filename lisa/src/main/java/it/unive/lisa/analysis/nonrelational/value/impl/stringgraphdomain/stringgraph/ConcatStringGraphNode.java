@@ -7,9 +7,8 @@ import java.util.List;
 public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
     public ConcatStringGraphNode() {
+        super();
         this.value = 0;
-        this.children = new ArrayList<>();
-        this.parents = new ArrayList<>();
     }
 
     public ConcatStringGraphNode(Collection<StringGraphNode> parents, Collection<StringGraphNode> children) {
@@ -21,14 +20,17 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
 
     @Override
-    public void setChildren(Collection<StringGraphNode> children) {
-        this.value = children.size();
-        super.setChildren(children);
+    protected void addForwardChild(StringGraphNode child) {
+        super.addForwardChild(child);
+        this.value += 1;
     }
 
     @Override
 	public String toString() {
-		return "Concat/"+value+" ["+ (children != null ? children.toString() : "") +"]";
+		return "Concat/" + value
+                + getChildren().stream()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", ", " [", "]"));
 	}
 
 	@Override
@@ -36,10 +38,10 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         String s = "";
         List<String> result = new ArrayList<>();
         for (StringGraphNode n : this.getChildren()) {
-            if (n.isFinite()) {
+            if (n.isFinite(n)) {
                 for (Object el : n.getDenotation()) {
                     String str = (String) el;
-                    // Concat happens only if none of the child nodes is TOP, otherwise result is AllPossibleStrings
+                    // Concat happens only if none of the child nodes is TOP, otherwise result is all possible strings
                     if (ConstValues.ALL_STRINGS.name().compareTo(s) != 0 && ConstValues.ALL_STRINGS.name().compareTo(str) != 0 )
                         s = s.concat(str);
                     else

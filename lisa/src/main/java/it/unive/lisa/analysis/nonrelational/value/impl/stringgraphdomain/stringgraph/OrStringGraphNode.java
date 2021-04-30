@@ -1,23 +1,31 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class OrStringGraphNode extends StringGraphNode<Void> {
 
     public OrStringGraphNode() {
+        super();
         this.value = null;
-        this.children = new ArrayList<>();
-        this.parents = new ArrayList<>();
     }
 
-    public OrStringGraphNode(Collection<StringGraphNode> parents, Collection<StringGraphNode> children) {
+    public OrStringGraphNode(Collection<StringGraphNode> forwardNodes, Collection<StringGraphNode> backwardNodes) {
         this();
-        this.parents.addAll(parents);
-        this.parents.addAll(children);
+        for (StringGraphNode node : forwardNodes) {
+            this.addForwardChild(node);
+        }
+        for (StringGraphNode node : backwardNodes) {
+            this.addBackwardChild(node);
+        }
     }
     
     @Override
 	public String toString() {
-		return "OR ["+ (children != null ? children.toString() : "") +"]";
+        return "OR "
+                + getChildren().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", ", " [", "]"));
 	}
 
 	@Override

@@ -1,16 +1,22 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class StringGraphNode<T> {
     protected T value;
-    protected List<StringGraphNode> children;
-    protected List<StringGraphNode> parents;
+	protected final List<StringGraphNode> forwardNodes;
+	protected final List<StringGraphNode> backwardNodes;
+	protected final List<StringGraphNode> forwardParents;
+	protected final List<StringGraphNode> backwardParents;
+
+	public StringGraphNode() {
+		this.forwardNodes = new ArrayList<>();
+		this.backwardNodes = new ArrayList<>();
+		this.forwardParents = new ArrayList<>();
+		this.backwardParents = new ArrayList<>();
+	}
 
 	/**
      * Creates a node starting from the string value parameter.
@@ -46,51 +52,71 @@ public abstract class StringGraphNode<T> {
     
 
     public int getOutDegree() {
-        return this.children.size();
+        return this.forwardNodes.size() + this.backwardNodes.size();
     }
 
-    public int getInDegree() {
-        return this.parents.size();
-    }
+    public int getInDegree() { return this.forwardParents.size() + this.backwardParents.size(); }
 
     public boolean isLeaf() {
         return this.getOutDegree() == 0;
     }
 
     public boolean isRoot() {
-        return this.getInDegree() == 0;
+        return this.forwardParents.isEmpty();
     }
 
-    public void setChildren(Collection<StringGraphNode> children) {
-        this.children = new ArrayList<>(children);
+	public List<StringGraphNode> getForwardNodes() {
+		return forwardNodes;
+	}
+
+	public List<StringGraphNode> getBackwardNodes() {
+		return backwardNodes;
+	}
+
+	public List<StringGraphNode> getForwardParents() {
+		return forwardParents;
+	}
+
+	public List<StringGraphNode> getBackwardParents() {
+		return backwardParents;
+	}
+
+	protected void addForwardChild(StringGraphNode child) {
+    	this.forwardNodes.add(child);
+        child.addForwardParent(this);
     }
 
-    public void setParents(Collection<StringGraphNode> parents) {
-        this.parents = new ArrayList<>(parents);
+	protected void addBackwardChild(StringGraphNode child) {
+    	this.backwardNodes.add(child);
+    	child.addBackwardParent(this);
+	}
+
+    private void addForwardParent(StringGraphNode parent) {
+    	this.forwardParents.add(parent);
     }
 
-    public List<StringGraphNode> getChildren() {
-        return this.children;
+	private void addBackwardParent(StringGraphNode parent) {
+    	this.backwardParents.add(parent);
+	}
+
+	public List<StringGraphNode> getChildren() {
+    	return Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream()).distinct().collect(Collectors.toList());
+	}
+
+	/**
+	 * CANNOT REMOVE BACKWARDS CHILDREN!
+	 *
+	 * @param child child node to be removed
+	 */
+    protected void removeChild(StringGraphNode child) {
+    	if (this.forwardNodes.remove(child) /*|| this.backwardNodes.remove(child)*/) {
+    		child.removeParent(this); /* Luke, I am NOT you father */
+		}
     }
 
-    public List<StringGraphNode> getParents() {
-        return this.parents;
-    }
-
-    public void addChild(StringGraphNode child) {
-        this.children.add(child);
-    }
-
-    public void addParent(StringGraphNode parent) {
-        this.parents.add(parent);
-    }
-
-    public void removeChild(StringGraphNode child) {
-        this.children.remove(child);
-    }
-
-    public void removeParent(StringGraphNode parent) {
-        this.parents.remove(parent);
+    private void removeParent(StringGraphNode parent) {
+    	this.forwardParents.remove(parent);
+    	/*this.backwardParents.remove(parent);*/
     }
 
 	public T getValue() { return value; }
@@ -130,10 +156,10 @@ public abstract class StringGraphNode<T> {
 	 *
 	 * @return true if the node is not part of a infinite loop, false otherwise
 	 */
-	public boolean isFinite() {
+	public boolean isFinite(StringGraphNode root) {
 		for (Object el : this.getChildren()) {
 			StringGraphNode child = (StringGraphNode) el;
-			if (child == this || !child.isFinite()) {
+			if (root == this || !child.isFinite(root)) {
 				return false;
 			}
 		}
@@ -141,39 +167,15 @@ public abstract class StringGraphNode<T> {
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((children == null) ? 0 : children.hashCode());
-		result = prime * result + ((parents == null) ? 0 : parents.hashCode());
-		result = prime * result + ((value == null) ? 0 : value.hashCode());
-		return result;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		StringGraphNode<?> that = (StringGraphNode<?>) o;
+		return Objects.equals(value, that.value) && Objects.equals(forwardNodes, that.forwardNodes) && Objects.equals(backwardNodes, that.backwardNodes) && Objects.equals(forwardParents, that.forwardParents) && Objects.equals(backwardParents, that.backwardParents);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		StringGraphNode other = (StringGraphNode) obj;
-		if (children == null) {
-			if (other.children != null)
-				return false;
-		} else if (!children.equals(other.children))
-			return false;
-		if (parents == null) {
-			if (other.parents != null)
-				return false;
-		} else if (!parents.equals(other.parents))
-			return false;
-		if (value == null) {
-			return other.value == null;
-		} else return value.equals(other.value);
+	public int hashCode() {
+		return Objects.hash(value, forwardNodes, backwardNodes, forwardParents, backwardParents);
 	}
-    
-    
-    
 }

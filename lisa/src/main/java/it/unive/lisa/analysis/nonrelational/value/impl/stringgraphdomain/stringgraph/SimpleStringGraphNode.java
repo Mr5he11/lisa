@@ -6,18 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 
 public class SimpleStringGraphNode extends StringGraphNode<String> {
-    
-    /**
-     *  TODO maybe we can remove the {@link ConstValues} enum and use these 3 fields as identifiers of MAX,MIN,EMPTY.
-     *  
-     *  in fact, the enum has package visibility, so it is nearly useless 
-     */
-    public static final StringGraphNode MAX = new SimpleStringGraphNode(ConstValues.MAX);
-    public static final StringGraphNode MIN = new SimpleStringGraphNode(ConstValues.MIN);
-    public static final StringGraphNode EMPTY = new SimpleStringGraphNode(ConstValues.EMPTY);
 
-    public SimpleStringGraphNode(ConstValues constValue) {
-        this(constValue.name(), false);
+    public SimpleStringGraphNode() {
+        super();
     }
 
     public SimpleStringGraphNode(String value) {
