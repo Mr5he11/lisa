@@ -2,7 +2,10 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
@@ -11,18 +14,29 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         this.value = 0;
     }
 
-    public ConcatStringGraphNode(Collection<StringGraphNode> parents, Collection<StringGraphNode> children) {
-        this();
-        this.parents.addAll(parents);
-        this.parents.addAll(children);
-        this.value = this.children.size();
+    public ConcatStringGraphNode(String value) {
+        super();
+        for (String s: value.split("")) {
+            addForwardChild(new SimpleStringGraphNode(s));
+        }
     }
-
 
     @Override
     protected void addForwardChild(StringGraphNode child) {
         super.addForwardChild(child);
         this.value += 1;
+    }
+
+    @Override
+    protected void addBackwardChild(StringGraphNode child) {
+        super.addBackwardChild(child);
+        this.value += 1;
+    }
+
+    @Override
+    protected void removeChild(StringGraphNode child) {
+        super.removeChild(child);
+        this.value -= 1;
     }
 
     @Override

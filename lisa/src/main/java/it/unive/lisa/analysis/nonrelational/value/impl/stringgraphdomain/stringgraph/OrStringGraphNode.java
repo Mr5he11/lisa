@@ -31,9 +31,13 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 	@Override
     public List<String> getDenotation() {
         List<String> result = new ArrayList<>();
-        for (StringGraphNode n : this.getChildren()) {
-            for (Object el : n.getDenotation()) {
-                String str = (String) el;
+
+        List<StringGraphNode> union = Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        for (StringGraphNode<?> n : union) {
+            for (String str : n.getDenotation()) {
                 if (
                         (result.size() == 1 && ConstValues.ALL_STRINGS.name().compareTo(result.get(0)) == 0)
                         || ConstValues.ALL_STRINGS.name().compareTo(str) == 0

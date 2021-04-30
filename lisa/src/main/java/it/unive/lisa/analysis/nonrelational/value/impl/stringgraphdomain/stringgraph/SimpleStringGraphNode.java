@@ -12,23 +12,18 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
     }
 
     public SimpleStringGraphNode(String value) {
-       this(value,true);
-    }
-
-    public SimpleStringGraphNode(String value, Collection<StringGraphNode> parents) {
-        this(value);
-        this.parents.addAll(parents);
-    }
-
-    private SimpleStringGraphNode(String value, Boolean checkLen) {
-        if (checkLen) {
-            if (value.length() != 1) throw new IllegalArgumentException("Value of SimpleStringGraphNode must be of length 1");
-        }
+        this();
+        if (value.length() != 1)
+            throw new IllegalArgumentException("Value of SimpleStringGraphNode must be of length 1");
 
         this.value = value;
-        this.children = new ArrayList<>();
-        this.parents = new ArrayList<>();
     }
+
+    @Override
+    protected void addForwardChild(StringGraphNode child) {
+        throw new UnsupportedOperationException("Cannot add forward children to " + this.getClass().getName());
+    }
+
 
     @Override
 	public String toString() {

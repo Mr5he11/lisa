@@ -32,22 +32,15 @@ public abstract class StringGraphNode<T> {
     	
     	// Create EMPTY node
     	if (value == null) 
-    		return SimpleStringGraphNode.EMPTY;
-    	
+    		return new ConstStringGraphNode(ConstValues.EMPTY);
+
     	// Create SIMPLE node with 1 char
     	if (value.length() == 1)
     		return new SimpleStringGraphNode(value);
     	
     	
-    	StringGraphNode root = new ConcatStringGraphNode();
+    	return new ConcatStringGraphNode(value);
 
-    	// Create CONCAT node with all chars of value as children 
-    	List<StringGraphNode> charNodes = Stream.of(value.split(""))	// create stream of all characters
-    			.map(SimpleStringGraphNode::new)					// map them to a StringGraphNode.
-    			.collect(Collectors.toList());							// collect as list
-    	root.setChildren(charNodes);
-
-    	return root;
     }
     
 
