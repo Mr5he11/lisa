@@ -1,6 +1,10 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
-import java.util.*;
+import java.lang.reflect.ParameterizedType;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,13 +27,29 @@ public abstract class StringGraphNode
 	protected final List<P> forwardParents;
 	protected final List<P> backwardParents;
 
+	private Class<T> selfClass;
+	private Class<C> childClass;
+	private Class<P> parentClass;
+	
+	@SuppressWarnings("unchecked")
 	public StringGraphNode() {
+		this.selfClass = (Class<T>)
+				   ((ParameterizedType)getClass().getGenericSuperclass())
+				      .getActualTypeArguments()[1];
+		
+		this.childClass = (Class<C>)
+				   ((ParameterizedType)getClass().getGenericSuperclass())
+				      .getActualTypeArguments()[2];
+		this.parentClass = (Class<P>)
+				   ((ParameterizedType)getClass().getGenericSuperclass())
+				      .getActualTypeArguments()[3];
+		
 		this.forwardNodes = new ArrayList<>();
 		this.backwardNodes = new ArrayList<>();
 		this.forwardParents = new ArrayList<>();
 		this.backwardParents = new ArrayList<>();
 	}
-
+	
 	/**
      * Creates a node starting from the string value parameter.
      * It checks whether the string has only one character, producing a {@link SimpleStringGraphNode}
@@ -56,6 +76,11 @@ public abstract class StringGraphNode
 
 		return result;
 	}
+    
+    public static <T extends StringGraphNode<?,?,?,?>, V extends StringGraphNode<?,?,?,?>> 
+    	Map.Entry<T,V> createEdge(T n1, V n2) {
+    	return new AbstractMap.SimpleEntry<T,V>(n1,n2);
+    }
     
 
     public int getOutDegree() {
@@ -92,12 +117,12 @@ public abstract class StringGraphNode
 
 	public void addForwardChild(C child) {
     	this.forwardNodes.add(child);
-        child.addForwardParent((T)this);
+        child.addForwardParent(this.selfClass.cast(this));
     }
 
 	public void addBackwardChild(C child) {
     	this.backwardNodes.add(child);
-    	child.addBackwardParent((T)this);
+    	child.addBackwardParent(this.selfClass.cast(this));
 	}
 
     protected void addForwardParent(P parent) {
@@ -115,7 +140,7 @@ public abstract class StringGraphNode
 	 */
 	public void removeChild(C child) {
     	if (this.forwardNodes.remove(child) /*|| this.backwardNodes.remove(child)*/) {
-    		child.removeParent((T)this); /* Luke, I am NOT you father */
+    		child.removeParent(this.selfClass.cast(this)); /* Luke, I am NOT you father */
 		}
     }
 
@@ -173,4 +198,23 @@ public abstract class StringGraphNode
 		}
 		return true;
 	}
+	
+	public List<StringGraphNode<?,?,?,?>> getPrincipalNodes() {
+		return List.of(this);
+	}
+
+	public Class<T> getSelfClass() {
+		return selfClass;
+	}
+
+	public Class<C> getChildClass() {
+		return childClass;
+	}
+
+	public Class<P> getParentClass() {
+		return parentClass;
+	}
+	
+	
+	
 }

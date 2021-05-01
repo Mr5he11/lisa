@@ -1,5 +1,7 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNode<C,P>>, P extends StringGraphNode<?,P, OrStringGraphNode<C,P>,?>>
@@ -52,4 +54,21 @@ public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNod
         }
         return result;
     }
+
+	@Override
+	public List<StringGraphNode<?, ?, ?, ?>> getPrincipalNodes() {
+		List<StringGraphNode<?,?,?,?>> prnds = new ArrayList<>();
+		
+		List<C> children = this.getChildren();
+		for (int i=0; i<getOutDegree(); i++) {
+			
+			List<StringGraphNode<?, ?, ?, ?>> childPrnds = children.get(i).getPrincipalNodes();
+			if (childPrnds != null) {
+				prnds.addAll(childPrnds);
+			}
+		}
+		return prnds;
+	}
+	
+	
 }

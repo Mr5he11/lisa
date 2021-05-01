@@ -1,12 +1,25 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
+
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.*;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConcatStringGraphNode;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstValues;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.OrStringGraphNode;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.StringGraphNode;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.*;
-
-import java.util.Objects;
+import it.unive.lisa.symbolic.value.BinaryExpression;
+import it.unive.lisa.symbolic.value.BinaryOperator;
+import it.unive.lisa.symbolic.value.Constant;
+import it.unive.lisa.symbolic.value.TernaryOperator;
+import it.unive.lisa.symbolic.value.UnaryOperator;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 	private final StringGraphNode<?,?,?,?> root;
@@ -117,7 +130,102 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected boolean lessOrEqualAux(StringGraphDomain other) throws SemanticException {
 		// 4.4.2
-		return false;
+		
+		return partialOrderAux(this.root, other.root, new HashSet<>());
+	}
+	
+	private <T extends StringGraphNode<?,?,?,?>, V extends StringGraphNode<?,?,?,?>> boolean 
+		partialOrderAux(T n, V m, Set<Map.Entry<StringGraphNode<?,?,?,?>, StringGraphNode<?,?,?,?>>> edges) {
+		
+		// case (1)
+		if (edges.contains( StringGraphNode.createEdge(n, m))) {
+			return true;
+		}
+		
+		// case (2)
+		if (m instanceof ConstStringGraphNode) {
+			ConstValues constValue = ((ConstStringGraphNode<?,?>)m).getValue();
+			
+			if (ConstValues.MAX == constValue) {
+				return true;
+			}
+		}
+		
+		// case (3)
+		if (n instanceof ConcatStringGraphNode && m instanceof ConcatStringGraphNode) {
+			ConcatStringGraphNode<?,?> concatN = (ConcatStringGraphNode<?,?>)n;
+			ConcatStringGraphNode<?,?> concatM = (ConcatStringGraphNode<?,?>)m;
+
+			List<StringGraphNode<?,?,?,?>> childrenN = (List<StringGraphNode<?,?,?,?>>) n.getChildren();
+			List<StringGraphNode<?,?,?,?>> childrenM = (List<StringGraphNode<?,?,?,?>>) m.getChildren();
+			
+			Integer k = concatN.getValue() != null ? concatN.getValue() : 0;
+			
+			if (k > 0 && k.compareTo(concatM.getValue()) == 0) {
+				
+				// add current edge to edgeSet
+				Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
+				copyOfEdges.add(StringGraphNode.createEdge(n, m));
+				
+				// for each i in [0,k] must hold <=(n/i, m/i, edges+{m,n})
+				// TODO include k?
+				for (int i=0; i<k; i++) {
+				
+					// TODO n/i is n.getForwardNodes().get(i)?
+					boolean isLessOrEqual = partialOrderAux(childrenN.get(i), childrenM.get(i), copyOfEdges);
+					
+					if (!isLessOrEqual) return false;
+				}
+				
+				return true;
+			}
+		}
+		
+		// case (4)
+		if (n instanceof OrStringGraphNode && m instanceof OrStringGraphNode) {
+			int k = n.getOutDegree();
+			List<StringGraphNode<?,?,?,?>> children = (List<StringGraphNode<?,?,?,?>>) n.getChildren();
+			
+			// add current edge to edgeSet
+			Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
+			copyOfEdges.add(StringGraphNode.createEdge(n, m));
+			
+			// for each i in [0,k] must hold <=(n/i, m, edges+{m,n})
+			// TODO include k?
+			for (int i=0; i<k; i++) {
+			
+				// TODO n/i is n.getForwardNodes().get(i)?
+				boolean isLessOrEqual = partialOrderAux(children.get(i), m, copyOfEdges);
+				
+				if (!isLessOrEqual) return false;
+			}
+			
+		}
+		
+		// case (5)
+		if (m instanceof OrStringGraphNode) {
+			
+			StringGraphNode<?,?,?,?> md = null;
+			
+			// look for a node 'md' in prnd(m) such that lb(n) == lb(md)
+			for (StringGraphNode<?,?,?,?> prnd: m.getPrincipalNodes()) {
+				if (prnd.getSelfClass().equals(n.getSelfClass())) {
+					md = prnd; // found one
+					break;
+				}
+			}
+			
+			
+			if (md != null) {
+				Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
+				copyOfEdges.add(StringGraphNode.createEdge(n, m));
+				return partialOrderAux(n, md, copyOfEdges);
+			}
+			
+		}
+		
+		// case (6)
+		return ( n.getSelfClass().equals( m.getSelfClass() ));
 	}
 
 	@Override

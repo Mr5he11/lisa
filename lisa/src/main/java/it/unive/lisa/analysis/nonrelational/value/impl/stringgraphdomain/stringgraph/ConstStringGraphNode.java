@@ -3,8 +3,8 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConstStringGraphNode<C extends StringGraphNode<?,C,?, ConstStringGraphNode<C,P>>, P extends StringGraphNode<?,P, ConstStringGraphNode<C,P>,?>>
-        extends StringGraphNode<ConstValues, ConstStringGraphNode<C,P>,C,P> {
+public class ConstStringGraphNode<C extends StringGraphNode<?,C,?,ConstStringGraphNode<C,P>>, P extends StringGraphNode<?,P,ConstStringGraphNode<C,P>,?>>
+        extends StringGraphNode<ConstValues, ConstStringGraphNode<C,P>, C, P> {
 
     public ConstStringGraphNode() {
         super();

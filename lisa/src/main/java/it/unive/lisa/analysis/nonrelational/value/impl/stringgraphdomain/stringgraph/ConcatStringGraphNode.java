@@ -3,18 +3,20 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConcatStringGraphNode<C extends StringGraphNode<?,C,?, ConcatStringGraphNode<C,P>>, P extends StringGraphNode<?,P, ConcatStringGraphNode<C,P>,?>>
+public class ConcatStringGraphNode<
+	C extends StringGraphNode<?,C,?, ConcatStringGraphNode<C,P>>,
+	P extends StringGraphNode<?,P, ConcatStringGraphNode<C,P>,?>>
         extends StringGraphNode<Integer, ConcatStringGraphNode<C,P>,C,P> {
 
     public ConcatStringGraphNode() {
-        super();
+    	super();
         this.value = 0;
     }
 
     public ConcatStringGraphNode(String value) {
         this();
         for (String s: value.split("")) {
-            addForwardChild( (C) new SimpleStringGraphNode(s) );
+            addForwardChild( getChildClass().cast(new SimpleStringGraphNode<>(s)) );
         }
     }
 
