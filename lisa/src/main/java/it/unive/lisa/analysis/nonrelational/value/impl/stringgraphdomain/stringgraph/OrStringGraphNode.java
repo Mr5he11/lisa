@@ -1,6 +1,7 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,37 @@ public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNod
             }
         }
         return result;
+    }
+
+    @Override
+    protected void compactAux() {
+        if (this.getChildren().size() == 1) {
+            // If Or node has only one child, replace such node with its child
+           StringGraphNode.replaceNode(this, this.getChildren().get(0));
+        }
+        Iterator<C> i = this.getChildren().iterator();
+        boolean maxFound = false;
+        while (i.hasNext() && !maxFound) {
+            C child = i.next();
+            maxFound = child.getDenotation().get(0).compareTo(ConstValues.ALL_STRINGS.name()) == 0;
+            if (maxFound) {
+                // If one of the Or node children is an ALL_STRINGS, replace it with a MAX node
+                ConstStringGraphNode<?,?> node = new ConstStringGraphNode<>(ConstValues.MAX);
+                StringGraphNode.replaceNode(this, node);
+            } else if (child instanceof OrStringGraphNode) {
+                // If one of the Or node children is a Or node itself, check that the latter has at least two parents,
+                // otherwise remove it and add all of its children to the uniq parent node
+                if (child.getForwardParents().size() + child.getBackwardParents().size() < 2) {
+                    for (StringGraphNode c : child.getForwardNodes()) {
+                        this.addForwardChild((C) c);
+                        // TODO: find a way to do this
+                        // child.removeChild((StringGraphNode) c);
+                    }
+                    this.removeChild(child);
+                    child.removeParent(this);
+                }
+            }
+        }
     }
 
 	@Override

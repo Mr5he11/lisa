@@ -54,7 +54,7 @@ public class ConcatStringGraphNode<
         String s = "";
         List<String> result = new ArrayList<>();
         for (C n : this.getChildren()) {
-            if (n.isFinite(n)) {
+            if (n.isFinite()) {
                 for (String str : n.getDenotation()) {
                     // Concat happens only if none of the child nodes is TOP, otherwise result is all possible strings
                     if (ConstValues.ALL_STRINGS.name().compareTo(s) != 0 && ConstValues.ALL_STRINGS.name().compareTo(str) != 0 )

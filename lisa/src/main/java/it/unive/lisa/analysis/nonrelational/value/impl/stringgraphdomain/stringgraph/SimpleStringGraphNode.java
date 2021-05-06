@@ -1,6 +1,5 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SimpleStringGraphNode<C extends StringGraphNode<?,C,?, SimpleStringGraphNode<C,P>>, P extends StringGraphNode<?,P, SimpleStringGraphNode<C,P>,?>>
@@ -35,13 +34,6 @@ public class SimpleStringGraphNode<C extends StringGraphNode<?,C,?, SimpleString
 
 	@Override
     public List<String> getDenotation() {
-        List<String> result = new ArrayList<>();
-        if (this.toString().compareTo(ConstValues.MAX.name()) == 0) {
-            result.add(ConstValues.ALL_STRINGS.name());
-        } else if (this.toString().compareTo(ConstValues.MIN.name()) != 0) {
-            result.add(this.toString());
-        }
-        // this this.value == MIN an empty list should be returned
-        return result;
+        return List.of(this.toString());
     }
 }

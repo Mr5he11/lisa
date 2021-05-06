@@ -1,10 +1,7 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
 import java.lang.reflect.ParameterizedType;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -134,19 +131,17 @@ public abstract class StringGraphNode
 	}
 
 	/**
-	 * CANNOT REMOVE BACKWARDS CHILDREN!
-	 *
 	 * @param child child node to be removed
 	 */
 	public void removeChild(C child) {
-    	if (this.forwardNodes.remove(child) /*|| this.backwardNodes.remove(child)*/) {
-    		child.removeParent(this.selfClass.cast(this)); /* Luke, I am NOT you father */
+    	if (this.forwardNodes.remove(child) || this.backwardNodes.remove(child)) {
+    		child.removeParent(this.selfClass.cast(this));
 		}
     }
 
     public void removeParent(P parent) {
     	this.forwardParents.remove(parent);
-    	/*this.backwardParents.remove(parent);*/
+    	this.backwardParents.remove(parent);
     }
 
 	public List<C> getChildren() {
@@ -172,9 +167,10 @@ public abstract class StringGraphNode
 	 * Compacts the given string graph, modifying current String graph instance.
 	 * Compaction rules are the following:
 	 * <ul>
-	 *     <li>no nodes with empty denotation must be present, nodes with empty declaration should be removed</li>
-	 *     <li>each OR node has strictly more than one child and each child should not be a MAX child,
-	 *     otherwise the entire OR subgraph can be replaced with a MAX node</li>
+	 *     <li>no nodes with empty denotation must be present, nodes with empty denotation should be removed</li>
+	 *     <li>each OR node has strictly more than one child, otherwise it can be replaced with its child.
+	 *     <li>Each child of an OR node should not be a MAX child,otherwise the entire OR subgraph
+	 *     can be replaced with a MAX node</li>
 	 *     <li>if a forward arc connects two OR nodes, the child node mast have an in-degree > 1,
 	 *     otherwise it should be removed, assigning its children to the parent node</li>
 	 *     <li>Each cycle should have at least one functor node (OR or CONCAT)
@@ -182,7 +178,23 @@ public abstract class StringGraphNode
 	 * </ul>
 	 */
 	public void compact() {
+		// If one node denotation is empty, remove it and its whole subtree
+		if (this.getDenotation().isEmpty()) {
+			for(P parent: this.getForwardParents()) {
+				parent.removeChild((T) this);
+			}
+		}
+		// Call compact aux to handle subclass specific behaviours
+		this.compactAux();
+		for (C child : this.getForwardNodes()) {
+			child.compact();
+		}
 	}
+
+	/**
+	 * Utility function to be override in each subclass to apply specific behaviour
+	 */
+	protected void compactAux() { }
 
 	/**
 	 * Says if a certain node is part of an infinite loop or not. It is a recursive methods
@@ -190,13 +202,49 @@ public abstract class StringGraphNode
 	 *
 	 * @return true if the node is not part of a infinite loop, false otherwise
 	 */
-	public boolean isFinite(StringGraphNode<?,?,?,?> root) {
-		for (C child : this.getChildren()) {
-			if (root == this || !child.isFinite(root)) {
+	public boolean isFinite() {
+		// If the current node is a leaf, it is finite: return true
+		if (this.isLeaf()) return true;
+		else {
+			// Otherwise the node itself and all child nodes must be checked not to have backward children
+			if (this.getBackwardNodes().size() > 0) {
 				return false;
+			} else {
+				boolean response = true;
+				Iterator<C> i = this.getForwardNodes().iterator();
+				while(response && i.hasNext()) {
+					C node = i.next();
+					response = node.isFinite();
+				}
+				return response;
 			}
 		}
-		return true;
+	}
+
+	/**
+	 * Static method, replaces one node with another, preserving all relationships.
+	 * TODO: now all casts are terrible, find a way to refactor the whole graph concept
+	 *
+	 * @param original the node to be replaced
+	 * @param replacement the node to insert in place of original
+	 */
+	public static void replaceNode(StringGraphNode original, StringGraphNode replacement) {
+		for (Object child : original.getForwardNodes()) {
+			replacement.addForwardChild((StringGraphNode) child);
+			original.removeChild((StringGraphNode) child);
+		}
+		for (Object child : original.getBackwardNodes()) {
+			replacement.addForwardChild((StringGraphNode) child);
+			original.removeChild((StringGraphNode) child);
+		}
+		for (Object parent : original.getForwardParents()) {
+			((StringGraphNode) parent).addForwardChild((StringGraphNode) replacement);
+			((StringGraphNode) parent).removeChild(original);
+		}
+		for (Object parent : original.getBackwardParents()) {
+			((StringGraphNode) parent).addBackwardChild((StringGraphNode) replacement);
+			((StringGraphNode) parent).removeChild(original);
+		}
 	}
 	
 	public List<StringGraphNode<?,?,?,?>> getPrincipalNodes() {
