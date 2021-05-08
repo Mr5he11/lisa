@@ -4,7 +4,7 @@ class sg {
 		def x = "ciao";
 		def y = 0;
 		if (y > 0) {
-		    x = x + " lol";
+		    x = strcat(x," lol");
 		}
     }
 }

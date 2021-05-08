@@ -5,8 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNode<C,P>>, P extends StringGraphNode<?,P, OrStringGraphNode<C,P>,?>>
-        extends StringGraphNode<Void, OrStringGraphNode<C,P>,C,P> {
+public class OrStringGraphNode extends StringGraphNode<Void> {
 
     public OrStringGraphNode() {
         super();
@@ -41,7 +40,7 @@ public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNod
     public List<String> getDenotation() {
         List<String> result = new ArrayList<>();
 
-        for (C n : getChildren()) {
+        for (StringGraphNode<?> n : getChildren()) {
             for (String str : n.getDenotation()) {
                 if (
                         (result.size() == 1 && ConstValues.ALL_STRINGS.name().compareTo(result.get(0)) == 0)
@@ -62,23 +61,22 @@ public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNod
             // If Or node has only one child, replace such node with its child
            StringGraphNode.replaceNode(this, this.getChildren().get(0));
         }
-        Iterator<C> i = this.getChildren().iterator();
+        Iterator<StringGraphNode<?>> i = this.getChildren().iterator();
         boolean maxFound = false;
         while (i.hasNext() && !maxFound) {
-            C child = i.next();
+            StringGraphNode<?> child = i.next();
             maxFound = child.getDenotation().get(0).compareTo(ConstValues.ALL_STRINGS.name()) == 0;
             if (maxFound) {
                 // If one of the Or node children is an ALL_STRINGS, replace it with a MAX node
-                ConstStringGraphNode<?,?> node = new ConstStringGraphNode<>(ConstValues.MAX);
+                ConstStringGraphNode node = new ConstStringGraphNode(ConstValues.MAX);
                 StringGraphNode.replaceNode(this, node);
             } else if (child instanceof OrStringGraphNode) {
                 // If one of the Or node children is a Or node itself, check that the latter has at least two parents,
                 // otherwise remove it and add all of its children to the uniq parent node
                 if (child.getForwardParents().size() + child.getBackwardParents().size() < 2) {
-                    for (StringGraphNode c : child.getForwardNodes()) {
-                        this.addForwardChild((C) c);
-                        // TODO: find a way to do this
-                        // child.removeChild((StringGraphNode) c);
+                    for (StringGraphNode<?> c : child.getForwardNodes()) {
+                        this.addForwardChild(c);
+                        child.removeChild(c);
                     }
                     this.removeChild(child);
                     child.removeParent(this);
@@ -88,13 +86,13 @@ public class OrStringGraphNode<C extends StringGraphNode<?,C,?, OrStringGraphNod
     }
 
 	@Override
-	public List<StringGraphNode<?, ?, ?, ?>> getPrincipalNodes() {
-		List<StringGraphNode<?,?,?,?>> prnds = new ArrayList<>();
+	public List<StringGraphNode<?>> getPrincipalNodes() {
+		List<StringGraphNode<?>> prnds = new ArrayList<>();
 		
-		List<C> children = this.getChildren();
+		List<StringGraphNode<?>> children = this.getChildren();
 		for (int i=0; i<getOutDegree(); i++) {
 			
-			List<StringGraphNode<?, ?, ?, ?>> childPrnds = children.get(i).getPrincipalNodes();
+			List<StringGraphNode<?>> childPrnds = children.get(i).getPrincipalNodes();
 			if (childPrnds != null) {
 				prnds.addAll(childPrnds);
 			}

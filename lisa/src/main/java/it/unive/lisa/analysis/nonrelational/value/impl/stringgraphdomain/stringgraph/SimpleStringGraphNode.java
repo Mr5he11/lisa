@@ -2,8 +2,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 
 import java.util.List;
 
-public class SimpleStringGraphNode<C extends StringGraphNode<?,C,?, SimpleStringGraphNode<C,P>>, P extends StringGraphNode<?,P, SimpleStringGraphNode<C,P>,?>>
-        extends StringGraphNode<String, SimpleStringGraphNode<C,P>,C,P> {
+public class SimpleStringGraphNode extends StringGraphNode<String> {
 
     public SimpleStringGraphNode() {
         super();
@@ -18,12 +17,12 @@ public class SimpleStringGraphNode<C extends StringGraphNode<?,C,?, SimpleString
     }
 
     @Override
-    public void addForwardChild(C child) {
+    public <C extends StringGraphNode<?>> void addForwardChild(C child) {
         throw new UnsupportedOperationException("Cannot add forward children to " + this.getClass().getName());
     }
 
     @Override
-    public void removeChild(C child) {
+    public <C extends StringGraphNode<?>> void removeChild(C child) {
         throw new UnsupportedOperationException("Cannot remove child from " + this.getClass().getName());
     }
 
@@ -35,5 +34,10 @@ public class SimpleStringGraphNode<C extends StringGraphNode<?,C,?, SimpleString
 	@Override
     public List<String> getDenotation() {
         return List.of(this.toString());
+    }
+
+    @Override
+    public String getLabel() {
+        return this.getValue();
     }
 }

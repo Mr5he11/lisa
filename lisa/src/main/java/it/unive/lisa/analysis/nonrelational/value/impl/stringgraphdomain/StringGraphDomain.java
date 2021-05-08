@@ -22,7 +22,7 @@ import it.unive.lisa.symbolic.value.TernaryOperator;
 import it.unive.lisa.symbolic.value.UnaryOperator;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
-	private final StringGraphNode<?,?,?,?> root;
+	private final StringGraphNode<?> root;
 	
 	public StringGraphDomain() {
 		this( new ConstStringGraphNode<>(ConstValues.EMPTY) );
@@ -39,7 +39,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 	@Override
 	public StringGraphDomain top() {
-		return new StringGraphDomain(new ConstStringGraphNode<>(ConstValues.MAX));
+		return new StringGraphDomain(new ConstStringGraphNode(ConstValues.MAX));
 	}
 
 	@Override
@@ -66,7 +66,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	protected StringGraphDomain evalNonNullConstant(Constant constant, ProgramPoint pp) {
 		if (constant.getValue() instanceof String) {
 			String value = (String)constant.getValue();
-			StringGraphNode<?,?,?,?> node = StringGraphNode.create(value);
+			StringGraphNode<?> node = StringGraphNode.create(value);
 			return new StringGraphDomain(node);
 		}
 		return bottom();
@@ -134,8 +134,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		return partialOrderAux(this.root, other.root, new HashSet<>());
 	}
 	
-	private <T extends StringGraphNode<?,?,?,?>, V extends StringGraphNode<?,?,?,?>> boolean 
-		partialOrderAux(T n, V m, Set<Map.Entry<StringGraphNode<?,?,?,?>, StringGraphNode<?,?,?,?>>> edges) {
+	private boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
 		
 		// case (1)
 		if (edges.contains( StringGraphNode.createEdge(n, m))) {
@@ -144,7 +143,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		
 		// case (2)
 		if (m instanceof ConstStringGraphNode) {
-			ConstValues constValue = ((ConstStringGraphNode<?,?>)m).getValue();
+			ConstValues constValue = ((ConstStringGraphNode)m).getValue();
 			
 			if (ConstValues.MAX == constValue) {
 				return true;
@@ -153,11 +152,11 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		
 		// case (3)
 		if (n instanceof ConcatStringGraphNode && m instanceof ConcatStringGraphNode) {
-			ConcatStringGraphNode<?,?> concatN = (ConcatStringGraphNode<?,?>)n;
-			ConcatStringGraphNode<?,?> concatM = (ConcatStringGraphNode<?,?>)m;
+			ConcatStringGraphNode concatN = (ConcatStringGraphNode)n;
+			ConcatStringGraphNode concatM = (ConcatStringGraphNode)m;
 
-			List<StringGraphNode<?,?,?,?>> childrenN = (List<StringGraphNode<?,?,?,?>>) n.getChildren();
-			List<StringGraphNode<?,?,?,?>> childrenM = (List<StringGraphNode<?,?,?,?>>) m.getChildren();
+			List<StringGraphNode<?>> childrenN = n.getChildren();
+			List<StringGraphNode<?>> childrenM = m.getChildren();
 			
 			Integer k = concatN.getValue() != null ? concatN.getValue() : 0;
 			
@@ -184,7 +183,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		// case (4)
 		if (n instanceof OrStringGraphNode && m instanceof OrStringGraphNode) {
 			int k = n.getOutDegree();
-			List<StringGraphNode<?,?,?,?>> children = (List<StringGraphNode<?,?,?,?>>) n.getChildren();
+			List<StringGraphNode<?>> children = n.getChildren();
 			
 			// add current edge to edgeSet
 			Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
@@ -205,11 +204,13 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		// case (5)
 		if (m instanceof OrStringGraphNode) {
 			
-			StringGraphNode<?,?,?,?> md = null;
+			StringGraphNode<?> md = null;
 			
 			// look for a node 'md' in prnd(m) such that lb(n) == lb(md)
-			for (StringGraphNode<?,?,?,?> prnd: m.getPrincipalNodes()) {
-				if (prnd.getSelfClass().equals(n.getSelfClass())) {
+			for (StringGraphNode<?> prnd: m.getPrincipalNodes()) {
+				String prndLbl = prnd.getLabel();
+				if ( (prndLbl == null && n.getLabel() == null) ||
+						(prndLbl != null && prnd.getLabel().equals(n.getLabel()))) {
 					md = prnd; // found one
 					break;
 				}
@@ -225,7 +226,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		}
 		
 		// case (6)
-		return ( n.getSelfClass().equals( m.getSelfClass() ));
+		return (n.getLabel().equals( m.getLabel() ));
 	}
 
 	@Override

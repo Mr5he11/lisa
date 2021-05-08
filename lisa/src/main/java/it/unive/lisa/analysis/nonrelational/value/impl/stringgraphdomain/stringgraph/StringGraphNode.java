@@ -62,13 +62,13 @@ public abstract class StringGraphNode
 
 		if (value == null) {
 			// EMPTY node if no value
-			result = new ConstStringGraphNode<>(ConstValues.EMPTY);
+			result = new ConstStringGraphNode(ConstValues.EMPTY);
 		} else if (value.length() == 1) {
 			// SIMPLE node if 1 char
-			result = new SimpleStringGraphNode<>(value);
+			result = new SimpleStringGraphNode(value);
 		} else {
 			// CONCAT node if 2+ chars
-			result = new ConcatStringGraphNode<>(value);
+			result = new ConcatStringGraphNode(value);
 		}
 
 		return result;
