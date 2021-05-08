@@ -3,8 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConstStringGraphNode<C extends StringGraphNode<?,C,?,ConstStringGraphNode<C,P>>, P extends StringGraphNode<?,P,ConstStringGraphNode<C,P>,?>>
-        extends StringGraphNode<ConstValues, ConstStringGraphNode<C,P>, C, P> {
+public class ConstStringGraphNode extends StringGraphNode<ConstValues> {
 
     public ConstStringGraphNode() {
         super();
@@ -16,17 +15,17 @@ public class ConstStringGraphNode<C extends StringGraphNode<?,C,?,ConstStringGra
     }
 
     @Override
-    public void addForwardChild(C child) {
+    public <C extends StringGraphNode<?>> void addForwardChild(C child) {
         throw new UnsupportedOperationException("Cannot add forward children to " + this.getClass().getName());
     }
 
     @Override
-    public void addBackwardChild(C child) {
+    public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
         throw new UnsupportedOperationException("Cannot add backward children to " + this.getClass().getName());
     }
 
     @Override
-    public void removeChild(C child) {
+    public <C extends StringGraphNode<?>> void removeChild(C child) {
         throw new UnsupportedOperationException("Cannot remove child from " + this.getClass().getName());
     }
 
@@ -39,5 +38,10 @@ public class ConstStringGraphNode<C extends StringGraphNode<?,C,?,ConstStringGra
     @Override
     public String toString() {
         return this.value != null ? this.value.name() : null ;
+    }
+
+    @Override
+    public String getLabel() {
+        return toString();
     }
 }

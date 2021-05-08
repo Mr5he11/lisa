@@ -12,22 +12,6 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
         this.value = null;
     }
 
-    public OrStringGraphNode(Collection<C> forwardNodes, Collection<C> backwardNodes) {
-        this();
-        for (C node : forwardNodes) {
-            this.addForwardChild(node);
-        }
-        for (C node : backwardNodes) {
-            this.addBackwardChild(node);
-        }
-    }
-
-    public OrStringGraphNode(C root1, C root2) {
-        this();
-        addForwardChild(root1);
-        addForwardChild(root2);
-    }
-
     @Override
 	public String toString() {
         return "OR"
@@ -99,6 +83,9 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 		}
 		return prnds;
 	}
-	
-	
+
+    @Override
+    public String getLabel() {
+        return "OR";
+    }
 }

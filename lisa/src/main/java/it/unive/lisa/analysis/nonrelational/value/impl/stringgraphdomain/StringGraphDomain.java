@@ -25,10 +25,10 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	private final StringGraphNode<?> root;
 	
 	public StringGraphDomain() {
-		this( new ConstStringGraphNode<>(ConstValues.EMPTY) );
+		this( new ConstStringGraphNode(ConstValues.EMPTY) );
 	}
 	
-	public StringGraphDomain(StringGraphNode<?,?,?,?> root) {
+	public StringGraphDomain(StringGraphNode<?> root) {
 		this.root = root;
 	}
 	
@@ -44,7 +44,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 	@Override
 	public StringGraphDomain bottom() {
-		return new StringGraphDomain(new ConstStringGraphNode<>(ConstValues.MIN));
+		return new StringGraphDomain(new ConstStringGraphNode(ConstValues.MIN));
 	}
 
 	@Override
@@ -83,7 +83,9 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		
 		if (BinaryOperator.STRING_CONCAT == operator) {
 
-			StringGraphNode<?,?,?,?> concatNode = new ConcatStringGraphNode(left.root, right.root);
+			StringGraphNode<?> concatNode = new ConcatStringGraphNode();
+			concatNode.addForwardChild(left.root);
+			concatNode.addForwardChild(right.root);
 
 			// TODO normalize concatNode
 
@@ -116,7 +118,9 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected StringGraphDomain lubAux(StringGraphDomain other) throws SemanticException {
 		// 4.4.3
-		StringGraphNode<?,?,?,?> orNode = new OrStringGraphNode(this.root, other.root);
+		StringGraphNode<?> orNode = new OrStringGraphNode();
+		orNode.addForwardChild(this.root);
+		orNode.addForwardChild(other.root);
 
 		return new StringGraphDomain(orNode);
 	}
@@ -130,7 +134,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected boolean lessOrEqualAux(StringGraphDomain other) throws SemanticException {
 		// 4.4.2
-		
 		return partialOrderAux(this.root, other.root, new HashSet<>());
 	}
 	
@@ -163,15 +166,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			if (k > 0 && k.compareTo(concatM.getValue()) == 0) {
 				
 				// add current edge to edgeSet
-				Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
-				copyOfEdges.add(StringGraphNode.createEdge(n, m));
-				
+				edges.add(StringGraphNode.createEdge(n, m));
+
 				// for each i in [0,k] must hold <=(n/i, m/i, edges+{m,n})
-				// TODO include k?
 				for (int i=0; i<k; i++) {
-				
-					// TODO n/i is n.getForwardNodes().get(i)?
-					boolean isLessOrEqual = partialOrderAux(childrenN.get(i), childrenM.get(i), copyOfEdges);
+
+					boolean isLessOrEqual = partialOrderAux(childrenN.get(i), childrenM.get(i), edges);
 					
 					if (!isLessOrEqual) return false;
 				}
@@ -186,18 +186,17 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			List<StringGraphNode<?>> children = n.getChildren();
 			
 			// add current edge to edgeSet
-			Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
-			copyOfEdges.add(StringGraphNode.createEdge(n, m));
-			
+			edges.add(StringGraphNode.createEdge(n, m));
+
 			// for each i in [0,k] must hold <=(n/i, m, edges+{m,n})
-			// TODO include k?
 			for (int i=0; i<k; i++) {
-			
-				// TODO n/i is n.getForwardNodes().get(i)?
-				boolean isLessOrEqual = partialOrderAux(children.get(i), m, copyOfEdges);
+
+				boolean isLessOrEqual = partialOrderAux(children.get(i), m, edges);
 				
 				if (!isLessOrEqual) return false;
 			}
+
+			return true;
 			
 		}
 		
@@ -218,9 +217,8 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			
 			
 			if (md != null) {
-				Set<Entry<StringGraphNode<?, ?, ?, ?>, StringGraphNode<?, ?, ?, ?>>> copyOfEdges = Set.copyOf(edges);
-				copyOfEdges.add(StringGraphNode.createEdge(n, m));
-				return partialOrderAux(n, md, copyOfEdges);
+				edges.add(StringGraphNode.createEdge(n, m));
+				return partialOrderAux(n, md, edges);
 			}
 			
 		}

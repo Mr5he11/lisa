@@ -1,46 +1,18 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- *
- * @param <V> type of Value
- * @param <T> type of current node
- * @param <C> type of children nodes of T: it has current node type C and parent node type T
- * @param <P> type of parent nodes of T: it has current node type P and children node type T
- */
-public abstract class StringGraphNode
-		<V,
-		T extends StringGraphNode<V, T, C, P>,
-		C extends StringGraphNode<?,C,?,T>,
-		P extends StringGraphNode<?,P,T,?>> {
+public abstract class StringGraphNode<V> {
 
 	protected V value;
-	protected final List<C> forwardNodes;
-	protected final List<C> backwardNodes;
-	protected final List<P> forwardParents;
-	protected final List<P> backwardParents;
-
-	private Class<T> selfClass;
-	private Class<C> childClass;
-	private Class<P> parentClass;
+	protected final List<StringGraphNode<?>> forwardNodes;
+	protected final List<StringGraphNode<?>> backwardNodes;
+	protected final List<StringGraphNode<?>> forwardParents;
+	protected final List<StringGraphNode<?>> backwardParents;
 	
-	@SuppressWarnings("unchecked")
 	public StringGraphNode() {
-		this.selfClass = (Class<T>)
-				   ((ParameterizedType)getClass().getGenericSuperclass())
-				      .getActualTypeArguments()[1];
-		
-		this.childClass = (Class<C>)
-				   ((ParameterizedType)getClass().getGenericSuperclass())
-				      .getActualTypeArguments()[2];
-		this.parentClass = (Class<P>)
-				   ((ParameterizedType)getClass().getGenericSuperclass())
-				      .getActualTypeArguments()[3];
-		
 		this.forwardNodes = new ArrayList<>();
 		this.backwardNodes = new ArrayList<>();
 		this.forwardParents = new ArrayList<>();
@@ -57,8 +29,8 @@ public abstract class StringGraphNode
      * @param value parameter included in the created {@link StringGraphNode}
      * @return a {@link SimpleStringGraphNode} or a ConcatNode {@link ConcatStringGraphNode}
      */
-    public static StringGraphNode<?,?,?,?> create(String value) {
-		StringGraphNode<?,?,?,?> result;
+    public static StringGraphNode<?> create(String value) {
+		StringGraphNode<?> result;
 
 		if (value == null) {
 			// EMPTY node if no value
@@ -74,9 +46,9 @@ public abstract class StringGraphNode
 		return result;
 	}
     
-    public static <T extends StringGraphNode<?,?,?,?>, V extends StringGraphNode<?,?,?,?>> 
+    public static <T extends StringGraphNode<?>, V extends StringGraphNode<?>>
     	Map.Entry<T,V> createEdge(T n1, V n2) {
-    	return new AbstractMap.SimpleEntry<T,V>(n1,n2);
+    	return new AbstractMap.SimpleEntry<>(n1,n2);
     }
     
 
@@ -96,61 +68,60 @@ public abstract class StringGraphNode
         return this.forwardParents.isEmpty();
     }
 
-	public List<C> getForwardNodes() {
+	public List<StringGraphNode<?>> getForwardNodes() {
 		return forwardNodes;
 	}
 
-	public List<C> getBackwardNodes() {
+	public List<StringGraphNode<?>> getBackwardNodes() {
 		return backwardNodes;
 	}
 
-	public List<P> getForwardParents() {
+	public List<StringGraphNode<?>> getForwardParents() {
 		return forwardParents;
 	}
 
-	public List<P> getBackwardParents() {
+	public List<StringGraphNode<?>> getBackwardParents() {
 		return backwardParents;
 	}
 
-	public void addForwardChild(C child) {
+	public <C extends StringGraphNode<?>> void addForwardChild(C child) {
     	this.forwardNodes.add(child);
-        child.addForwardParent(this.selfClass.cast(this));
+        child.addForwardParent(this);
     }
 
-	public void addBackwardChild(C child) {
+	public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
     	this.backwardNodes.add(child);
-    	child.addBackwardParent(this.selfClass.cast(this));
+    	child.addBackwardParent(this);
 	}
 
-    protected void addForwardParent(P parent) {
+    protected <P extends StringGraphNode<?>> void addForwardParent(P parent) {
     	this.forwardParents.add(parent);
     }
 
-	protected void addBackwardParent(P parent) {
+	protected <P extends StringGraphNode<?>> void addBackwardParent(P parent) {
     	this.backwardParents.add(parent);
 	}
 
-	/**
-	 * @param child child node to be removed
-	 */
-	public void removeChild(C child) {
+	public <C extends StringGraphNode<?>> void removeChild(C child) {
     	if (this.forwardNodes.remove(child) || this.backwardNodes.remove(child)) {
-    		child.removeParent(this.selfClass.cast(this));
+    		child.removeParent(this);
 		}
     }
 
-    public void removeParent(P parent) {
+    public <P extends StringGraphNode<?>> void removeParent(P parent) {
     	this.forwardParents.remove(parent);
     	this.backwardParents.remove(parent);
     }
 
-	public List<C> getChildren() {
+	public List<StringGraphNode<?>> getChildren() {
 		return Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream()).distinct().collect(Collectors.toList());
 	}
 
 	public V getValue() { return value; }
 
 	public void setValue(V value) { this.value = value; }
+
+	public abstract String getLabel();
 
 	/**
 	 * Produces the denotation of the string graph having root in the current object.
@@ -180,13 +151,13 @@ public abstract class StringGraphNode
 	public void compact() {
 		// If one node denotation is empty, remove it and its whole subtree
 		if (this.getDenotation().isEmpty()) {
-			for(P parent: this.getForwardParents()) {
-				parent.removeChild((T) this);
+			for(StringGraphNode<?> parent: this.getForwardParents()) {
+				parent.removeChild(this);
 			}
 		}
 		// Call compact aux to handle subclass specific behaviours
 		this.compactAux();
-		for (C child : this.getForwardNodes()) {
+		for (StringGraphNode<?> child : this.getForwardNodes()) {
 			child.compact();
 		}
 	}
@@ -211,9 +182,9 @@ public abstract class StringGraphNode
 				return false;
 			} else {
 				boolean response = true;
-				Iterator<C> i = this.getForwardNodes().iterator();
+				Iterator<StringGraphNode<?>> i = this.getForwardNodes().iterator();
 				while(response && i.hasNext()) {
-					C node = i.next();
+					StringGraphNode<?> node = i.next();
 					response = node.isFinite();
 				}
 				return response;
@@ -222,47 +193,32 @@ public abstract class StringGraphNode
 	}
 
 	/**
-	 * Static method, replaces one node with another, preserving all relationships.
-	 * TODO: now all casts are terrible, find a way to refactor the whole graph concept
+	 * Static method, replaces one node with another, preserving all relationships
 	 *
 	 * @param original the node to be replaced
 	 * @param replacement the node to insert in place of original
 	 */
-	public static void replaceNode(StringGraphNode original, StringGraphNode replacement) {
-		for (Object child : original.getForwardNodes()) {
-			replacement.addForwardChild((StringGraphNode) child);
-			original.removeChild((StringGraphNode) child);
+	public static void replaceNode(StringGraphNode<?> original, StringGraphNode<?> replacement) {
+		for (StringGraphNode<?> child : original.getForwardNodes()) {
+			replacement.addForwardChild(child);
+			original.removeChild(child);
 		}
-		for (Object child : original.getBackwardNodes()) {
-			replacement.addForwardChild((StringGraphNode) child);
-			original.removeChild((StringGraphNode) child);
+		for (StringGraphNode<?> child : original.getBackwardNodes()) {
+			replacement.addForwardChild(child);
+			original.removeChild(child);
 		}
-		for (Object parent : original.getForwardParents()) {
-			((StringGraphNode) parent).addForwardChild((StringGraphNode) replacement);
-			((StringGraphNode) parent).removeChild(original);
+		for (StringGraphNode<?> parent : original.getForwardParents()) {
+			parent.addForwardChild(replacement);
+			parent.removeChild(original);
 		}
-		for (Object parent : original.getBackwardParents()) {
-			((StringGraphNode) parent).addBackwardChild((StringGraphNode) replacement);
-			((StringGraphNode) parent).removeChild(original);
+		for (StringGraphNode<?> parent : original.getBackwardParents()) {
+			parent.addBackwardChild(replacement);
+			parent.removeChild(original);
 		}
 	}
 	
-	public List<StringGraphNode<?,?,?,?>> getPrincipalNodes() {
+	public List<StringGraphNode<?>> getPrincipalNodes() {
 		return List.of(this);
 	}
 
-	public Class<T> getSelfClass() {
-		return selfClass;
-	}
-
-	public Class<C> getChildClass() {
-		return childClass;
-	}
-
-	public Class<P> getParentClass() {
-		return parentClass;
-	}
-	
-	
-	
 }
