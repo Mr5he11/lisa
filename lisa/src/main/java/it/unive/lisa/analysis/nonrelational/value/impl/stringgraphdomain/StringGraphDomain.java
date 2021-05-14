@@ -185,7 +185,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		if (TernaryOperator.STRING_SUBSTRING == operator) {
 			// 4.4.6
 			if ( left.root instanceof ConcatStringGraphNode ) {
-				
+				// TODO how to get begin & end parameters??
 			}
 
 			return top();
