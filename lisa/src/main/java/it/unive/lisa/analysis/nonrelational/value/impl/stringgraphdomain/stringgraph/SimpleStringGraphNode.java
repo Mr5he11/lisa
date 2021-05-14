@@ -16,6 +16,10 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
         this.value = value;
     }
 
+    public Character getValueAsChar() {
+        return getValue().charAt(0);
+    }
+
     @Override
     public <C extends StringGraphNode<?>> void addForwardChild(C child) {
         throw new UnsupportedOperationException("Cannot add forward children to " + this.getClass().getName());

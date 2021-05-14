@@ -9,11 +9,7 @@ import java.util.Set;
 
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConcatStringGraphNode;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstValues;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.OrStringGraphNode;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.StringGraphNode;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.*;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryExpression;
 import it.unive.lisa.symbolic.value.BinaryOperator;
@@ -94,12 +90,92 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		}
 
 		if (BinaryOperator.STRING_CONTAINS == operator) {
+			// 4.4.6
+			// checking only for a single character
+			if (right.root instanceof SimpleStringGraphNode) {
+				Character c = ((SimpleStringGraphNode)right.root).getValueAsChar();
 
-			// TODO 4.4.6
+				// check if "true" condition of section 4.4.6 holds
+				boolean containsCheckTrue = containsCheckTrueAux(left.root, c);
+				
+				if (!containsCheckTrue) {
+					// checks if "false" condition of section 4.4.6 holds
+					boolean containsCheckFalse = containsCheckFalseAux(left.root, c);
+
+					if (!containsCheckFalse) {
+						return top(); // TODO TopBoolean??
+					} else {
+						// TODO how to return true?
+					}
+
+				} else {
+					// TODO how to return true?
+				}
+				
+			}
+
+			// TODO how to return false?
 
 		}
 
 		return bottom();
+	}
+
+	private boolean containsCheckTrueAux(StringGraphNode<?> node, Character c) {
+
+		if (node instanceof SimpleStringGraphNode) {
+			return ((SimpleStringGraphNode) node).getValueAsChar().equals(c);
+		}
+
+		// do not check OR nodes here! At first iteration, left is the root, which can be an OR node!
+
+		List<StringGraphNode<?>> children = node.getChildren();
+		for (StringGraphNode<?> child: children) {
+
+			if (child instanceof OrStringGraphNode) {
+				continue;
+			}
+
+			if (child instanceof  SimpleStringGraphNode) {
+				if (containsCheckTrueAux(child, c)) {
+					return true;
+				}
+			}
+
+			if (child instanceof ConcatStringGraphNode) {
+				Integer k = ((ConcatStringGraphNode)child).getValue();
+				for (int i=0; i<k; i++) {
+
+					if (containsCheckTrueAux(child, c)) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	// return true iff no node is 'c' or MAX
+	private boolean containsCheckFalseAux(StringGraphNode<?> node, Character c) {
+
+		if (node instanceof ConstStringGraphNode) {
+			return !ConstValues.MAX.equals( ((ConstStringGraphNode)node).getValue() );
+		}
+
+		if (node instanceof SimpleStringGraphNode) {
+			return !((SimpleStringGraphNode) node).getValueAsChar().equals(c);
+		}
+
+		// for all children must hold (no node is 'c' or MAX)
+		for (StringGraphNode<?> child: node.getChildren()) {
+			if (!containsCheckFalseAux(child, c)) {
+				return false;
+			}
+		}
+
+		// survived the check
+		return true;
 	}
 
 	@Override
@@ -107,9 +183,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			StringGraphDomain middle, StringGraphDomain right, ProgramPoint pp) {
 
 		if (TernaryOperator.STRING_SUBSTRING == operator) {
+			// 4.4.6
+			if ( left.root instanceof ConcatStringGraphNode ) {
+				
+			}
 
-			// TODO 4.4.6
-
+			return top();
 		}
 
 		return bottom();
