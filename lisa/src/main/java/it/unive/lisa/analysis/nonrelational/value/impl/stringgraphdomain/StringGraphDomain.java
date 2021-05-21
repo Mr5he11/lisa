@@ -83,7 +83,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			concatNode.addForwardChild(left.root);
 			concatNode.addForwardChild(right.root);
 
-			// TODO normalize concatNode
+			// concatNode.normalize();
 
 			return new StringGraphDomain(concatNode);
 			

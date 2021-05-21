@@ -1,6 +1,7 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,9 +40,12 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     @Override
 	public String toString() {
 		return "Concat/" + value
-                + getChildren().stream()
+                + getForwardNodes().stream()
                 .map(Object::toString)
-                .collect(Collectors.joining(", ", " [", "]"));
+                .collect(Collectors.joining(", ", " [", "]"))
+                + getBackwardNodes().stream()
+                .map(StringGraphNode::getLabel)
+                .collect(Collectors.joining(", ", " {", "}"));
 	}
 
     @Override
@@ -66,5 +70,37 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         }
         result.add(s);
         return result;
+    }
+
+    @Override
+    public void normalizeAux() {
+        if (this.getChildren().size() == 1) {
+            // Rule 1
+            StringGraphNode.replaceNode(this, this.getChildren().get(0));
+        } else {
+            boolean allMax = true;
+            int index = 0;
+            Iterator<StringGraphNode<?>> childIterator = this.getChildren().iterator();
+            while (allMax && childIterator.hasNext()) {
+                StringGraphNode<?> child = childIterator.next();
+                if (!(child instanceof ConstStringGraphNode && child.getValue() == ConstValues.MAX.name())) {
+                    allMax = false;
+                    // Rule 3 and Rule 4
+                    child.normalizeAux();
+                    if (child instanceof ConcatStringGraphNode && child.getInDegree() < 2) {
+                        for (StringGraphNode<?> c : child.getChildren()) {
+                            this.addForwardChild(index, c);
+                            child.removeChild(c);
+                        }
+                        this.removeChild(child);
+                    }
+                }
+                index += 1;
+            }
+            if (allMax) {
+                // Rule 2
+                StringGraphNode.replaceNode(this, new ConstStringGraphNode(ConstValues.MAX));
+            }
+        }
     }
 }

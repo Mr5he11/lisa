@@ -89,6 +89,11 @@ public abstract class StringGraphNode<V> {
         child.addForwardParent(this);
     }
 
+	public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
+		this.forwardNodes.add(index, child);
+		child.addForwardParent(this);
+	}
+
 	public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
     	this.backwardNodes.add(child);
     	child.addBackwardParent(this);
@@ -147,6 +152,8 @@ public abstract class StringGraphNode<V> {
 	 *     <li>Each cycle should have at least one functor node (OR or CONCAT)
 	 *     otherwise the whole cycle can be removed</li>
 	 * </ul>
+	 * Note that the last rule is always implicitly satisfied because simple and const nodes are not allowed to have
+	 * children, so a cycle will always have at least one functor node.
 	 */
 	public void compact() {
 		// If one node denotation is empty, remove it and its whole subtree
@@ -166,6 +173,32 @@ public abstract class StringGraphNode<V> {
 	 * Utility function to be override in each subclass to apply specific behaviour
 	 */
 	protected void compactAux() { }
+
+	/**
+	 * Normalizes the String graph having root in the current node. In order to do so, it firstly compacts the String
+	 * graph and then applies the following rules:
+	 * <ul>
+	 *     <li><strong>Rule 1:</strong> Concat nodes with only one child should be replaced with their only child</li>
+	 *     <li><strong>Rule 2:</strong> Concat nodes with only MAX node children should be replaced with a MAX node</li>
+	 *     <li><strong>Rule 3:</strong> If two concat nodes are successive children of a concat parent, these two
+	 *     nodes should be replaced with a single node having, as children, the children of the two replaced nodes
+	 *     placed in the same order they were before (only if both the replaced nodes had only one parent)</li>
+	 *     <li><strong>Rule 4:</strong> If a concat node has a concat parent, and its in-degree is 1, then it should
+	 *     be replaced by its children</li>
+	 * </ul>
+	 * At the time of writing (2021-05-21) only Concat nodes have specific operations to execute in order to normalize.
+	 * <strong>NB:</strong> Rule 4 incorporates rule 3, since the action described in rule 3 will completely be
+	 * overwritten by rule 4.
+	 */
+	public void normalize() {
+		this.compact();
+		this.normalizeAux();
+	}
+
+	/**
+	 * Utility function to be override in each subclass to apply specific behaviour
+	 */
+	protected void normalizeAux() { }
 
 	/**
 	 * Says if a certain node is part of an infinite loop or not. It is a recursive methods
