@@ -57,7 +57,7 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     public List<String> getDenotation() {
         String s = "";
         List<String> result = new ArrayList<>();
-        for (StringGraphNode<?> n : this.getChildren()) {
+        for (StringGraphNode<?> n : this.getForwardNodes()) {
             if (n.isFinite()) {
                 for (String str : n.getDenotation()) {
                     // Concat happens only if none of the child nodes is TOP, otherwise result is all possible strings
@@ -74,25 +74,24 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
     @Override
     public void normalizeAux() {
-        if (this.getChildren().size() == 1) {
+        if (this.getOutDegree() == 1) {
             // Rule 1
             StringGraphNode.replaceNode(this, this.getChildren().get(0));
         } else {
             boolean allMax = true;
             int index = 0;
-            Iterator<StringGraphNode<?>> childIterator = this.getChildren().iterator();
-            while (allMax && childIterator.hasNext()) {
-                StringGraphNode<?> child = childIterator.next();
+            for (StringGraphNode<?> child : this.getChildren()) {
                 if (!(child instanceof ConstStringGraphNode && child.getValue() == ConstValues.MAX.name())) {
                     allMax = false;
                     // Rule 3 and Rule 4
-                    child.normalizeAux();
                     if (child instanceof ConcatStringGraphNode && child.getInDegree() < 2) {
-                        for (StringGraphNode<?> c : child.getChildren()) {
-                            this.addForwardChild(index, c);
-                            child.removeChild(c);
-                        }
+                        int innerIndex = 0;
                         this.removeChild(child);
+                        for (StringGraphNode<?> c : child.getChildren()) {
+                            this.addForwardChild(index + innerIndex, c);
+                            child.removeChild(c);
+                            innerIndex += 1;
+                        }
                     }
                 }
                 index += 1;
@@ -102,5 +101,6 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
                 StringGraphNode.replaceNode(this, new ConstStringGraphNode(ConstValues.MAX));
             }
         }
+        this.setValue(this.getOutDegree());
     }
 }

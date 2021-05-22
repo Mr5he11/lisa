@@ -1,5 +1,6 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -83,9 +84,16 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			concatNode.addForwardChild(left.root);
 			concatNode.addForwardChild(right.root);
 
-			// concatNode.normalize();
+			StringGraphNode<?> newNode = null;
+			try {
+				newNode = StringGraphNode.deepClone(concatNode);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			if (newNode != null)
+				newNode.normalize();
 
-			return new StringGraphDomain(concatNode);
+			return new StringGraphDomain(newNode);
 			
 		}
 

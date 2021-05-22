@@ -1,10 +1,11 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class StringGraphNode<V> {
+public abstract class StringGraphNode<V> implements Serializable {
 
 	protected V value;
 	protected final List<StringGraphNode<?>> forwardNodes;
@@ -192,6 +193,8 @@ public abstract class StringGraphNode<V> {
 	 */
 	public void normalize() {
 		this.compact();
+		for (StringGraphNode<?> child : this.getForwardNodes())
+			child.normalize();
 		this.normalizeAux();
 	}
 
@@ -248,6 +251,24 @@ public abstract class StringGraphNode<V> {
 			parent.addBackwardChild(replacement);
 			parent.removeChild(original);
 		}
+	}
+
+	/**
+	 * Creates a deep copy of the current node, cloning all descendant objects
+	 * Credits to <a href="https://alvinalexander.com">Alvin Alexander</a>
+	 *
+	 * @param node The node to be cloned
+	 * @return the cloned object
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	public static StringGraphNode<?> deepClone(StringGraphNode<?> node) throws IOException, ClassNotFoundException {
+		ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+		ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteOutputStream);
+		objectOutputStream.writeObject(node);
+		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
+		ObjectInputStream objectInputStream = new ObjectInputStream(byteInputStream);
+		return (StringGraphNode<?>) objectInputStream.readObject();
 	}
 	
 	public List<StringGraphNode<?>> getPrincipalNodes() {
