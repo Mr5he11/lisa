@@ -1,7 +1,6 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -78,23 +77,24 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
             // Rule 1
             StringGraphNode.replaceNode(this, this.getChildren().get(0));
         } else {
-            boolean allMax = true;
             int index = 0;
-            for (StringGraphNode<?> child : this.getChildren()) {
-                if (!(child instanceof ConstStringGraphNode && child.getValue() == ConstValues.MAX.name())) {
-                    allMax = false;
-                    // Rule 3 and Rule 4
-                    if (child instanceof ConcatStringGraphNode && child.getInDegree() < 2) {
-                        int innerIndex = 0;
-                        this.removeChild(child);
-                        for (StringGraphNode<?> c : child.getChildren()) {
-                            this.addForwardChild(index + innerIndex, c);
-                            child.removeChild(c);
-                            innerIndex += 1;
-                        }
+            boolean allMax = true;
+            while (index < this.getChildren().size()) {
+                StringGraphNode<?> child = this.getChildren().get(index);
+                // Rule 3 and Rule 4
+                if (child instanceof ConcatStringGraphNode && child.getInDegree() < 2) {
+                    int i = 0;
+                    while (child.getChildren().size() > 0) {
+                        StringGraphNode<?> c = child.getChildren().get(0);
+                        this.addForwardChild(index + i, c);
+                        child.removeChild(c);
+                        i += 1;
                     }
+                    this.removeChild(child);
+                } else {
+                    index += 1;
+                    allMax = allMax && child instanceof ConstStringGraphNode && child.getValue() == ConstValues.MAX.name();
                 }
-                index += 1;
             }
             if (allMax) {
                 // Rule 2
