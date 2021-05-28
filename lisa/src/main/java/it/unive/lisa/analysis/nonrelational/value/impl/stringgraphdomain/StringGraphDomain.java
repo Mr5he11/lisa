@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.*;
@@ -66,12 +67,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			StringGraphNode<?> node = StringGraphNode.create(value);
 			return new StringGraphDomain(node);
 		}
-		return bottom();
+		return top();
 	}
 
 	@Override
 	protected StringGraphDomain evalUnaryExpression(UnaryOperator operator, StringGraphDomain arg, ProgramPoint pp) {
-		return bottom();
+		return top();
 	}
 
 	@Override
@@ -97,36 +98,8 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			
 		}
 
-		if (BinaryOperator.STRING_CONTAINS == operator) {
-			// 4.4.6
-			// checking only for a single character
-			if (right.root instanceof SimpleStringGraphNode) {
-				Character c = ((SimpleStringGraphNode)right.root).getValueAsChar();
 
-				// check if "true" condition of section 4.4.6 holds
-				boolean containsCheckTrue = containsCheckTrueAux(left.root, c);
-				
-				if (!containsCheckTrue) {
-					// checks if "false" condition of section 4.4.6 holds
-					boolean containsCheckFalse = containsCheckFalseAux(left.root, c);
-
-					if (!containsCheckFalse) {
-						return top(); // TODO TopBoolean??
-					} else {
-						// TODO how to return true?
-					}
-
-				} else {
-					// TODO how to return true?
-				}
-				
-			}
-
-			// TODO how to return false?
-
-		}
-
-		return bottom();
+		return top();
 	}
 
 	private boolean containsCheckTrueAux(StringGraphNode<?> node, Character c) {
@@ -192,14 +165,14 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 		if (TernaryOperator.STRING_SUBSTRING == operator) {
 			// 4.4.6
-			if ( left.root instanceof ConcatStringGraphNode ) {
-				// TODO how to get begin & end parameters??
-			}
-
 			return top();
 		}
 
-		return bottom();
+		if (TernaryOperator.STRING_REPLACE == operator) {
+			// TODO
+		}
+
+		return top();
 	}
 	
 	@Override
@@ -312,6 +285,39 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		
 		// case (6)
 		return (n.getLabel().equals( m.getLabel() ));
+	}
+
+	@Override
+	protected SemanticDomain.Satisfiability satisfiesBinaryExpression(BinaryOperator operator, StringGraphDomain left, StringGraphDomain right, ProgramPoint pp) {
+
+		if (BinaryOperator.STRING_CONTAINS == operator) {
+			// 4.4.6
+			// checking only for a single character
+			if (right.root instanceof SimpleStringGraphNode) {
+				Character c = ((SimpleStringGraphNode) right.root).getValueAsChar();
+
+				// check if "true" condition of section 4.4.6 holds
+				boolean containsCheckTrue = containsCheckTrueAux(left.root, c);
+
+				if (!containsCheckTrue) {
+					// checks if "false" condition of section 4.4.6 holds
+					boolean containsCheckFalse = containsCheckFalseAux(left.root, c);
+
+					if (!containsCheckFalse) {
+						return SemanticDomain.Satisfiability.UNKNOWN;
+					} else {
+						return SemanticDomain.Satisfiability.SATISFIED;
+					}
+
+				} else {
+					return SemanticDomain.Satisfiability.SATISFIED;
+				}
+			}
+
+			return SemanticDomain.Satisfiability.NOT_SATISFIED;
+		}
+
+		return SemanticDomain.Satisfiability.UNKNOWN;
 	}
 
 	@Override
