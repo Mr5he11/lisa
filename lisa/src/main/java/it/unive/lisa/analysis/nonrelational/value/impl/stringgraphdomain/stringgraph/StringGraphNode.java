@@ -229,6 +229,19 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	/**
+	 * Creates the list of principal nodes following the algorithm described in Section 4.4.1:
+	 * <ul>
+	 *     <li><strong>Case 1:</strong> if this is an OR node, it is the union of all principal nodes of each child of this node</li>
+	 *     <li><strong>Case 2:</strong> for every other type of node, it returns the node itself</li>
+	 * </ul>
+	 *
+	 * @return the list of Principal Nodes
+	 */
+	public List<StringGraphNode<?>> getPrincipalNodes() {
+		return List.of(this);
+	}
+
+	/**
 	 * Static method, replaces one node with another, preserving all relationships
 	 *
 	 * @param original the node to be replaced
@@ -270,9 +283,4 @@ public abstract class StringGraphNode<V> implements Serializable {
 		ObjectInputStream objectInputStream = new ObjectInputStream(byteInputStream);
 		return (StringGraphNode<?>) objectInputStream.readObject();
 	}
-	
-	public List<StringGraphNode<?>> getPrincipalNodes() {
-		return List.of(this);
-	}
-
 }
