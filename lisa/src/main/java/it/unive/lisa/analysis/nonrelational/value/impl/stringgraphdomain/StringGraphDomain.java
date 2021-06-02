@@ -112,12 +112,16 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	protected StringGraphDomain lubAux(StringGraphDomain other) throws SemanticException {
 		// Section 4.4.3
 		StringGraphNode<?> orNode = new OrStringGraphNode();
+		StringGraphNode<?> result = new OrStringGraphNode();
 		orNode.addForwardChild(this.root);
 		orNode.addForwardChild(other.root);
-
-		orNode.normalize();
-
-		return new StringGraphDomain(orNode);
+		try {
+			result = StringGraphNode.deepClone(orNode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		result.normalize();
+		return new StringGraphDomain(result);
 	}
 
 	@Override
@@ -151,7 +155,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	 * @param n the root of the graph tree to compare
 	 * @param m the root of the other graph tree to compare
 	 * @param edges set of edges represented with the Map.Entry entity
-	 * @return
+	 * @return true if n is less or equal then m, false otherwise
 	 */
 	private boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
 		
