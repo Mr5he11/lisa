@@ -32,7 +32,7 @@ public class StringGraphTest {
             System.out.println(e);
         }
 
-        normalized.normalize();
+        // normalized.normalize();
         // System.out.println(root.getChildren());
         System.out.println(normalized);
     }

@@ -111,17 +111,17 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected StringGraphDomain lubAux(StringGraphDomain other) throws SemanticException {
 		// Section 4.4.3
-		StringGraphNode<?> orNode = new OrStringGraphNode();
-		StringGraphNode<?> result = new OrStringGraphNode();
-		orNode.addForwardChild(this.root);
-		orNode.addForwardChild(other.root);
-		try {
-			result = StringGraphNode.deepClone(orNode);
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (!(this.root.getDenotation().equals(other.root.getDenotation()))) {
+			StringGraphNode<?> orNode = new OrStringGraphNode();
+			orNode.addForwardChild(this.root);
+			orNode.addForwardChild(other.root);
+			StringGraphNode<?> result = orNode.normalize();
+			return new StringGraphDomain(result);
+		} else {
+			return this;
 		}
-		result.normalize();
-		return new StringGraphDomain(result);
+
+
 	}
 
 	@Override

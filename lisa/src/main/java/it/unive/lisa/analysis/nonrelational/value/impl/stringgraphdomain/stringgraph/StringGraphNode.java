@@ -158,28 +158,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * Note that the last rule is always implicitly satisfied because simple and const nodes are not allowed to have
 	 * children, so a cycle will always have at least one functor node.
 	 */
-	public void compact() {
-		// If one node denotation is empty, remove it and its whole subtree
-		if (this.getDenotation().isEmpty()) {
-			List<StringGraphNode<?>> parents = this.getForwardParents();
-			for (int i=parents.size()-1; i>=0; i--) {
-				StringGraphNode<?> parent = parents.get(i);
-				parent.removeChild(this);
-			}
-		}
-
-		List<StringGraphNode<?>> children = new ArrayList<>(this.getForwardNodes());
-		for (StringGraphNode<?> child : children) {
-			child.compact();
-		}
-		// Call compact aux to handle subclass specific behaviours
-		this.compactAux();
-	}
-
-	/**
-	 * Utility function to be override in each subclass to apply specific behaviour
-	 */
-	protected void compactAux() { }
 
 	/**
 	 * Normalizes the String graph having root in the current node. In order to do so, it firstly compacts the String
