@@ -161,7 +161,9 @@ public abstract class StringGraphNode<V> implements Serializable {
 	public void compact() {
 		// If one node denotation is empty, remove it and its whole subtree
 		if (this.getDenotation().isEmpty()) {
-			for(StringGraphNode<?> parent: this.getForwardParents()) {
+			List<StringGraphNode<?>> parents = this.getForwardParents();
+			for (int i=parents.size()-1; i>=0; i--) {
+				StringGraphNode<?> parent = parents.get(i);
 				parent.removeChild(this);
 			}
 		}
@@ -172,9 +174,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 		}
 		// Call compact aux to handle subclass specific behaviours
 		this.compactAux();
-		for (StringGraphNode<?> child : this.getForwardNodes()) {
-			child.compact();
-		}
 	}
 
 	/**
@@ -261,7 +260,9 @@ public abstract class StringGraphNode<V> implements Serializable {
 			replacement.addForwardChild(child);
 			original.removeChild(child);
 		}
-		for (StringGraphNode<?> child : original.getBackwardNodes()) {
+		List<StringGraphNode<?>> backwardNodes = original.getBackwardNodes();
+		for (int i = backwardNodes.size()-1; i>=0; i--) {
+			StringGraphNode<?> child = backwardNodes.get(i);
 			replacement.addForwardChild(child);
 			original.removeChild(child);
 		}
@@ -272,7 +273,10 @@ public abstract class StringGraphNode<V> implements Serializable {
 			parent.addForwardChild(replacement);
 			parent.removeChild(original);
 		}
-		for (StringGraphNode<?> parent : original.getBackwardParents()) {
+
+		List<StringGraphNode<?>> backwardParents = original.getBackwardParents();
+		for (int i = backwardParents.size()-1; i>=0; i--) {
+			StringGraphNode<?> parent = backwardParents.get(i);
 			parent.addBackwardChild(replacement);
 			parent.removeChild(original);
 		}

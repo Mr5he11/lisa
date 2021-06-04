@@ -22,7 +22,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	
 	@Override
 	public String representation() {
-		return this.root != null ? this.root.toString() : null;
+		return this.root.toString();
 	}
 
 	@Override
@@ -258,24 +258,17 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 				Character c = simpleGraphNode.getValueAsChar();
 
 				// check if "true" condition of Section 4.4.6 - Table VII holds
-				boolean containsCheckTrue = containsCheckTrueAux(left.root, c);
-
-				if (!containsCheckTrue) {
-					// checks if "false" condition of Section 4.4.6 - Table VII holds
-					boolean containsCheckFalse = containsCheckFalseAux(left.root, c);
-
-					if (!containsCheckFalse) {
-						return SemanticDomain.Satisfiability.UNKNOWN;
-					} else {
-						return SemanticDomain.Satisfiability.SATISFIED;
-					}
-
-				} else {
+				if (containsCheckTrueAux(left.root, c)) {
 					return SemanticDomain.Satisfiability.SATISFIED;
 				}
-			}
 
-			return SemanticDomain.Satisfiability.NOT_SATISFIED;
+				// checks if "false" condition of Section 4.4.6 - Table VII holds
+				if (containsCheckFalseAux(left.root, c)) {
+					return SemanticDomain.Satisfiability.NOT_SATISFIED;
+				}
+
+				return SemanticDomain.Satisfiability.UNKNOWN;
+			}
 		}
 
 

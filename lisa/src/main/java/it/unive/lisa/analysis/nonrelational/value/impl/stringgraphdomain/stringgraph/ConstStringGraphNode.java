@@ -31,7 +31,7 @@ public class ConstStringGraphNode extends StringGraphNode<ConstValues> {
 
     @Override
     public List<String> getDenotation() {
-        if (this.value == null) { return new ArrayList<>(); }
+        if (this.value == null  || ConstValues.MIN.equals(this.value) || ConstValues.EMPTY.equals(this.value) ) { return new ArrayList<>(); }
         return List.of(this.value.name());
     }
 
