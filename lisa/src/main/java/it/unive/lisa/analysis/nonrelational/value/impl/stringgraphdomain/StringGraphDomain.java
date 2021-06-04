@@ -94,15 +94,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected StringGraphDomain evalTernaryExpression(TernaryOperator operator, StringGraphDomain left,
 			StringGraphDomain middle, StringGraphDomain right, ProgramPoint pp) {
-/*
-		if (TernaryOperator.STRING_SUBSTRING == operator) {
-			return top();
-		}
-
-		if (TernaryOperator.STRING_REPLACE == operator) {
-			return top();
-		}
-*/
 		return top();
 	}
 	
