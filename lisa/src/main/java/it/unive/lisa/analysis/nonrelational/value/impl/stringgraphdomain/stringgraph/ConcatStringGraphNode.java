@@ -3,6 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
@@ -13,6 +14,14 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
     public ConcatStringGraphNode(String value) {
         this();
+
+        if (value.startsWith("\"")) {
+            value = value.substring(1);
+        }
+        if (value.endsWith("\"")) {
+            value = value.substring(0, value.length()-1);
+        }
+
         for (String s: value.split("")) {
             addForwardChild( new SimpleStringGraphNode(s) );
         }
@@ -39,12 +48,9 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     @Override
 	public String toString() {
 		return "Concat/" + value
-                + getForwardNodes().stream()
+                + getChildren().stream()
                 .map(Object::toString)
-                .collect(Collectors.joining(", ", " [", "]"))
-                + getBackwardNodes().stream()
-                .map(StringGraphNode::getLabel)
-                .collect(Collectors.joining(", ", " {", "}"));
+                .collect(Collectors.joining(", ", " [", "]"));
 	}
 
     @Override
