@@ -253,8 +253,9 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		if (BinaryOperator.STRING_CONTAINS == operator) {
 			// 4.4.6
 			// checking only for a single character
-			if (right.root instanceof SimpleStringGraphNode) {
-				Character c = ((SimpleStringGraphNode) right.root).getValueAsChar();
+			SimpleStringGraphNode simpleGraphNode = StringGraphNode.getSingleCharacterString(right.root);
+			if (simpleGraphNode != null) {
+				Character c = simpleGraphNode.getValueAsChar();
 
 				// check if "true" condition of Section 4.4.6 - Table VII holds
 				boolean containsCheckTrue = containsCheckTrueAux(left.root, c);

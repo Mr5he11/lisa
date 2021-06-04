@@ -9,6 +9,7 @@ public class StringGraphTest {
 
     @Test
     public void testStringGraph() {
+        StringGraphNode<?> normalized = null;
         StringGraphNode<?> concat1 = StringGraphNode.create("ipsum");
         StringGraphNode<?> concat2 = StringGraphNode.create("lorem");
         StringGraphNode<?> concat3 = StringGraphNode.create("dolor");
@@ -21,11 +22,18 @@ public class StringGraphTest {
         concat2.addForwardChild(concat3);
         concat1.addBackwardChild(root);
         concat3.addForwardChild(new ConstStringGraphNode(ConstValues.MAX));
-
+        System.out.println("-----------BEFORE-----------");
         //concat2.normalize();
-        root.normalize();
-        // System.out.println(root.getChildren());
         System.out.println(root);
-        System.out.println(concat2);
+        System.out.println("------------AFTER-----------");
+        try {
+            normalized = StringGraphNode.deepClone(root);
+        } catch(Exception e) {
+            System.out.println(e);
+        }
+
+        normalized.normalize();
+        // System.out.println(root.getChildren());
+        System.out.println(normalized);
     }
 }

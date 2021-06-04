@@ -1,10 +1,9 @@
 class sg {
-
-	f0() {
-		def x = "ciao";
-		def y = 0;
-		if (y > 0) {
-		    x = strcat(x," lol");
-		}
+    f1() {
+        def x = "ciao";
+        if (strcon(x,"i")) {
+            x = strcat(x," lol");
+        }
+        return x;
     }
 }

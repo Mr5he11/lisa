@@ -1,5 +1,7 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
+import javassist.Loader;
+
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -145,7 +147,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * Compaction rules are the following:
 	 * <ul>
 	 *     <li>no nodes with empty denotation must be present, nodes with empty denotation should be removed</li>
-	 *     <li>each OR node has strictly more than one child, otherwise it can be replaced with its child.
+	 *     <li>each OR node has strictly more than one child, otherwise it can be replaced with its child.</li>
 	 *     <li>Each child of an OR node should not be a MAX child,otherwise the entire OR subgraph
 	 *     can be replaced with a MAX node</li>
 	 *     <li>if a forward arc connects two OR nodes, the child node mast have an in-degree > 1,
@@ -162,6 +164,11 @@ public abstract class StringGraphNode<V> implements Serializable {
 			for(StringGraphNode<?> parent: this.getForwardParents()) {
 				parent.removeChild(this);
 			}
+		}
+
+		List<StringGraphNode<?>> children = new ArrayList<>(this.getForwardNodes());
+		for (StringGraphNode<?> child : children) {
+			child.compact();
 		}
 		// Call compact aux to handle subclass specific behaviours
 		this.compactAux();
@@ -248,7 +255,9 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * @param replacement the node to insert in place of original
 	 */
 	public static void replaceNode(StringGraphNode<?> original, StringGraphNode<?> replacement) {
-		for (StringGraphNode<?> child : original.getForwardNodes()) {
+		List<StringGraphNode<?>> forwardNodes = original.getForwardNodes();
+		for (int i = forwardNodes.size()-1; i>=0; i--) {
+			StringGraphNode<?> child = forwardNodes.get(i);
 			replacement.addForwardChild(child);
 			original.removeChild(child);
 		}
@@ -256,7 +265,10 @@ public abstract class StringGraphNode<V> implements Serializable {
 			replacement.addForwardChild(child);
 			original.removeChild(child);
 		}
-		for (StringGraphNode<?> parent : original.getForwardParents()) {
+
+		List<StringGraphNode<?>> forwardParents = original.getForwardParents();
+		for (int i = forwardParents.size()-1; i>=0; i--) {
+			StringGraphNode<?> parent = forwardParents.get(i);
 			parent.addForwardChild(replacement);
 			parent.removeChild(original);
 		}
@@ -282,5 +294,27 @@ public abstract class StringGraphNode<V> implements Serializable {
 		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
 		ObjectInputStream objectInputStream = new ObjectInputStream(byteInputStream);
 		return (StringGraphNode<?>) objectInputStream.readObject();
+	}
+
+	public static SimpleStringGraphNode getSingleCharacterString(StringGraphNode<?> node) {
+		if (node instanceof SimpleStringGraphNode) {
+			return (SimpleStringGraphNode)node;
+		}
+		if (node instanceof ConcatStringGraphNode) {
+			List<StringGraphNode<?>> children = node.getChildren();
+			if (
+				node.getOutDegree() == 3 &&
+				"\"".equals(children.get(0).getValue()) &&
+				"\"".equals(children.get(2).getValue())
+			) {
+				return getSingleCharacterString(children.get(1));
+			}
+
+			if (node.getOutDegree() == 1) {
+				return getSingleCharacterString(children.get(0));
+			}
+		}
+
+		return null;
 	}
 }
