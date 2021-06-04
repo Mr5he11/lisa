@@ -77,12 +77,10 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 			StringGraphNode<?> newNode = null;
 			try {
-				newNode = StringGraphNode.deepClone(concatNode);
+				newNode = concatNode.normalize();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			if (newNode != null)
-				newNode.normalize();
 
 			return new StringGraphDomain(newNode);
 			

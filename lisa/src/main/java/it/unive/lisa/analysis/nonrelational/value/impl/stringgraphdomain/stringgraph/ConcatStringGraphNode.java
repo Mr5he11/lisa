@@ -72,10 +72,10 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     }
 
     @Override
-    public void normalizeAux() {
+    public StringGraphNode<?> normalizeAux() {
         if (this.getOutDegree() == 1) {
             // Rule 1
-            StringGraphNode.replaceNode(this, this.getChildren().get(0));
+            return this.getChildren().get(0);
         } else {
             int index = 0;
             boolean allMax = true;
@@ -98,9 +98,10 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
             }
             if (allMax) {
                 // Rule 2
-                StringGraphNode.replaceNode(this, new ConstStringGraphNode(ConstValues.MAX));
+                return new ConstStringGraphNode(ConstValues.MAX);
             }
         }
         this.setValue(this.getOutDegree());
+        return this;
     }
 }

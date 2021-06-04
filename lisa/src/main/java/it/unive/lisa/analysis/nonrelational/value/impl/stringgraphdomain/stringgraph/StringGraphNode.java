@@ -3,6 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import javassist.Loader;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -175,17 +176,31 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * <strong>NB:</strong> Rule 4 incorporates rule 3, since the action described in rule 3 will completely be
 	 * overwritten by rule 4.
 	 */
-	public void normalize() {
-		this.compact();
-		for (StringGraphNode<?> child : this.getForwardNodes())
-			child.normalize();
-		this.normalizeAux();
+	public StringGraphNode<?> normalize() {
+		StringGraphNode<V> normalized = null;
+		try {
+			normalized = this.getClass().getDeclaredConstructor().newInstance();
+			if (normalized instanceof SimpleStringGraphNode || normalized instanceof ConstStringGraphNode)
+				normalized.setValue(this.getValue());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ConstStringGraphNode(ConstValues.EMPTY);
+		}
+
+		for (StringGraphNode<?> child : this.getForwardNodes()) {
+			if (!(child.getDenotation().isEmpty())) {
+				StringGraphNode<?> newChild = child.normalize();
+				normalized.addForwardChild(newChild);
+			}
+		}
+
+		return normalized.normalizeAux();
 	}
 
 	/**
 	 * Utility function to be override in each subclass to apply specific behaviour
 	 */
-	protected void normalizeAux() { }
+	protected StringGraphNode<?> normalizeAux() { return this; }
 
 	/**
 	 * Says if a certain node is part of an infinite loop or not. It is a recursive methods

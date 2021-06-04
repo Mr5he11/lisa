@@ -86,11 +86,4 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     public String getLabel() {
         return "OR";
     }
-
-    @Override
-    protected void normalizeAux() {
-        for (StringGraphNode<?> child : this.getForwardNodes()) {
-            child.normalize();
-        }
-    }
 }
