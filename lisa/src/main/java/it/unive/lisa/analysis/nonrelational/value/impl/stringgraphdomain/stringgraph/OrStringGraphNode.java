@@ -15,12 +15,9 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     @Override
 	public String toString() {
         return "OR"
-                + getForwardNodes().stream()
+                + getChildren().stream()
                 .map(Object::toString)
-                .collect(Collectors.joining(", ", " [", "]"))
-                + getBackwardNodes().stream()
-                .map(StringGraphNode::getLabel)
-                .collect(Collectors.joining(", ", " {", "}"));
+                .collect(Collectors.joining(", ", " [", "]"));
 	}
 
 	@Override
@@ -69,17 +66,17 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 
 	@Override
 	public List<StringGraphNode<?>> getPrincipalNodes() {
-		List<StringGraphNode<?>> prnds = new ArrayList<>();
+		List<StringGraphNode<?>> principalNodes = new ArrayList<>();
 		
-		List<StringGraphNode<?>> children = this.getChildren();
+		List<StringGraphNode<?>> children = this.getForwardNodes();
 		for (int i=0; i<getOutDegree(); i++) {
 			
-			List<StringGraphNode<?>> childPrnds = children.get(i).getPrincipalNodes();
-			if (childPrnds != null) {
-				prnds.addAll(childPrnds);
+			List<StringGraphNode<?>> childPrNodes = children.get(i).getPrincipalNodes();
+			if (childPrNodes != null) {
+                principalNodes.addAll(childPrNodes);
 			}
 		}
-		return prnds;
+		return principalNodes;
 	}
 
     @Override
