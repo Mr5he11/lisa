@@ -234,24 +234,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return List.of(this);
 	}
 
-	/**
-	 * Creates a deep copy of the current node, cloning all descendant objects
-	 * Credits to <a href="https://alvinalexander.com">Alvin Alexander</a>
-	 *
-	 * @param node The node to be cloned
-	 * @return the cloned object
-	 * @throws IOException
-	 * @throws ClassNotFoundException
-	 */
-	public static StringGraphNode<?> deepClone(StringGraphNode<?> node) throws IOException, ClassNotFoundException {
-		ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-		ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteOutputStream);
-		objectOutputStream.writeObject(node);
-		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
-		ObjectInputStream objectInputStream = new ObjectInputStream(byteInputStream);
-		return (StringGraphNode<?>) objectInputStream.readObject();
-	}
-
 	public static SimpleStringGraphNode getSingleCharacterString(StringGraphNode<?> node) {
 		if (node instanceof SimpleStringGraphNode) {
 			return (SimpleStringGraphNode)node;
@@ -459,4 +441,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 		// survived the check
 		return true;
 	}
+
+
 }

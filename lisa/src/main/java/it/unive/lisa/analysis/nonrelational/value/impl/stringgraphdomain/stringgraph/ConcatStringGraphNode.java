@@ -48,9 +48,12 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     @Override
 	public String toString() {
 		return "Concat/" + value
-                + getChildren().stream()
+                + getForwardNodes().stream()
                 .map(Object::toString)
-                .collect(Collectors.joining(", ", " [", "]"));
+                .collect(Collectors.joining(", ", " [", (getBackwardNodes().isEmpty() ? "" : ", ")))
+                + getBackwardNodes().stream()
+                .map(StringGraphNode::getLabel)
+                .collect(Collectors.joining(", ", "", "] "));
 	}
 
     @Override

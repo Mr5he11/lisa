@@ -15,9 +15,12 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     @Override
 	public String toString() {
         return "OR"
-                + getChildren().stream()
+                + getForwardNodes().stream()
                 .map(Object::toString)
-                .collect(Collectors.joining(", ", " [", "]"));
+                .collect(Collectors.joining(", ", " [", (getBackwardNodes().isEmpty() ? "" : ", ")))
+                + getBackwardNodes().stream()
+                .map(StringGraphNode::getLabel)
+                .collect(Collectors.joining(", ", "", "] "));
 	}
 
 	@Override
