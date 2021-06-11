@@ -86,6 +86,7 @@ public abstract class SGNUtils {
 
         // Rule 8
         // TODO: must do rule 8
+        // if (node.)
 
         if (node instanceof OrStringGraphNode) {
             // Rule 2
@@ -160,23 +161,25 @@ public abstract class SGNUtils {
 
     /**
      * Computes the forward path that stays between a parent and a child node.
-     * The return format is an array of nodes where the node at 0 is the parent of the targeted child and
-     * the last node of the list is the provided parent itself. If there is no path between the two given nodes,
+     * The return format is an array of nodes where the node at 0 is the targeted child and
+     * the last node of the list is the ancestor of the provided child that comes after the parent itself.
+     * If there is no path between the two given nodes,
      * the function returns an empty list.
      *
      * @param parent the ancestor of #child
      * @param child the descendant of #parent
-     * @return a list of ancestors of #child if there is a path, [] otherwise
+     * @return a list the nodes in the path between #parent and #child, #parent excluded #child included, if found,
+     *  an empty list otherwise
      */
     public static List<StringGraphNode<?>> getForwardPath(StringGraphNode<?> parent, StringGraphNode<?> child) {
         if (parent.getForwardNodes().stream().anyMatch(c -> c.toString().equals(child.toString()))) {
-            return Collections.singletonList(parent);
+            return Collections.singletonList(child);
         } else {
             for (StringGraphNode<?> c : parent.getForwardNodes()) {
                 List<StringGraphNode<?>> result = getForwardPath(c, child);
-                if (result.size() > 0 && result.get(result.size() - 1).toString().equals(c.toString())) {
+                if (result.size() > 0) {
                     List<StringGraphNode<?>> returnValue = new ArrayList<>(result);
-                    returnValue.add(parent);
+                    returnValue.add(c);
                     return returnValue;
                 }
             }
