@@ -1,8 +1,5 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class OrStringGraphNode extends StringGraphNode<Void> {
@@ -65,7 +62,8 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     }
 
 	@Override
-	public List<StringGraphNode<?>> getPrincipalNodes() {
+	public Set<StringGraphNode<?>> getPrincipalNodes() {
+/*
 		List<StringGraphNode<?>> principalNodes = new ArrayList<>();
 		
 		List<StringGraphNode<?>> children = this.getForwardNodes();
@@ -77,7 +75,12 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 			}
 		}
 		return principalNodes;
-	}
+*/
+        final Set<StringGraphNode<?>> set = new HashSet<>();
+        getForwardNodes().forEach(stringGraphNode -> set.addAll(stringGraphNode.getPrincipalNodes()));
+
+        return set;
+    }
 
     @Override
     public String getLabel() {

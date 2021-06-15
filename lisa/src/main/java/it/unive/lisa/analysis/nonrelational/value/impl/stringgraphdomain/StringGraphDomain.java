@@ -13,7 +13,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	private final StringGraphNode<?> root;
 	
 	public StringGraphDomain() {
-		this( new ConstStringGraphNode(ConstValues.EMPTY) );
+		this( new ConstStringGraphNode(ConstValues.MIN) );
 	}
 	
 	public StringGraphDomain(StringGraphNode<?> root) {
@@ -91,6 +91,11 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	}
 
 	@Override
+	public StringGraphDomain glbAux(StringGraphDomain other) {
+		return super.glbAux(other);
+	}
+
+	@Override
 	protected StringGraphDomain wideningAux(StringGraphDomain other) throws SemanticException {
 		// 4.4.4
 
@@ -105,17 +110,86 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		// 	(1): [vo]: OR node in gOld and [vn]: OR node in gNew where prlb(vo) <> prlb(vn)
 		// 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn)
 
-		// If one of the previous is true, then search for an ancestor [va] of [vn] such that prlb(vn) is INCLUDED in prlb(va)
-		// 	if ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
-		// 	else replace va with a OR node with [va, vn] as children. Then re-apply widening.
-		// else do nothing
+		StringGraphNode<?> vo = null, vn = null;
 
-		return top();
+		List<StringGraphNode<?>> oldNodes = go.root.getForwardNodes();
+		List<StringGraphNode<?>> newNodes = gn.root.getForwardNodes();
+
+		for(StringGraphNode<?> oldNode: oldNodes) {
+			boolean found = false;
+			for(StringGraphNode<?> newNode: newNodes) {
+
+				if (oldNode instanceof OrStringGraphNode && newNode instanceof OrStringGraphNode) {
+					// (1) : prlb(vo) <> prlb(vn)
+					Set<String> oldPrlb = oldNode.getPrincipalLabels();
+					Set<String> newPrlb = newNode.getPrincipalLabels();
+
+					if (oldPrlb == null && newPrlb != null) { found = true; }
+					if (oldPrlb != null && newPrlb == null) { found = true; }
+					if (oldPrlb != null && !oldPrlb.equals(newPrlb)) { found = true; }
+
+					if (found) {
+						vo = oldNode;
+						vn = newNode;
+						break;
+					}
+				}
+			}
+
+			if (found) {
+				break;
+			}
+		}
+
+
+		// If one of the previous is true, then search for an ancestor [va] of [vn] such that prlb(vn) is INCLUDED in prlb(va)
+		// else do nothing
+		if (vo == null || vn == null) {
+			return top();
+		}
+
+		StringGraphNode<?> va = null;
+		Set<String> nPrlb = vn.getPrincipalLabels();
+
+		StringGraphNode<?> parent = vn.getForwardParent();
+		while(va == null && parent != null) {
+			Set<String> parentPrlb = parent.getPrincipalLabels();
+			if (parentPrlb != null && parentPrlb.containsAll(nPrlb)) {
+				// found ancestor!
+				va = parent;
+			}
+
+			parent = parent.getForwardParent();
+		}
+
+		if (va == null) {
+			return top();
+		}
+		// If ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
+		// else replace va with a OR node with [va, vn] as children. Then re-apply widening.
+		if (StringGraphNode.isLessOrEqual(vn, va)) {
+			vn.addBackwardChild(va);
+			return gn;
+		} else {
+			OrStringGraphNode or = new OrStringGraphNode();
+
+			StringGraphNode<?> vaOriginalParent = va.getForwardParent();
+			vaOriginalParent.removeChild(va);
+			vaOriginalParent.addForwardChild(or);
+
+			vn.getForwardParent().removeChild(vn);
+
+			or.addForwardChild(va);
+			or.addForwardChild(vn);
+
+			return this.wideningAux(gn); // ???
+			//return other.wideningAux(gn); // ???
+		}
 	}
 
 	@Override
 	protected boolean lessOrEqualAux(StringGraphDomain other) throws SemanticException {
-		return StringGraphNode.partialOrderAux(this.root, other.root, new HashSet<>());
+		return StringGraphNode.isLessOrEqual(this.root, other.root);
 	}
 
 	@Override

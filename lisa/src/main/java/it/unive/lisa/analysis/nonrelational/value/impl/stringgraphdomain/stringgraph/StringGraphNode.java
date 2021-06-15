@@ -13,14 +13,14 @@ public abstract class StringGraphNode<V> implements Serializable {
 	protected V value;
 	protected final List<StringGraphNode<?>> forwardNodes;
 	protected final List<StringGraphNode<?>> backwardNodes;
-	protected final List<StringGraphNode<?>> forwardParents;
+	protected StringGraphNode<?> forwardParent;
 	protected final List<StringGraphNode<?>> backwardParents;
 	
 	public StringGraphNode() {
 		this.forwardNodes = new ArrayList<>();
 		this.backwardNodes = new ArrayList<>();
-		this.forwardParents = new ArrayList<>();
 		this.backwardParents = new ArrayList<>();
+		this.forwardParent = null;
 	}
 	
 	/**
@@ -61,7 +61,7 @@ public abstract class StringGraphNode<V> implements Serializable {
     }
 
     public int getInDegree() {
-    	return this.forwardParents.size() + this.backwardParents.size();
+    	return (isRoot() ? 0 : 1) + this.backwardParents.size();
     }
 
     public boolean isLeaf() {
@@ -69,7 +69,7 @@ public abstract class StringGraphNode<V> implements Serializable {
     }
 
     public boolean isRoot() {
-        return this.forwardParents.isEmpty();
+        return forwardParent == null;
     }
 
 	public List<StringGraphNode<?>> getForwardNodes() {
@@ -80,8 +80,8 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return backwardNodes;
 	}
 
-	public List<StringGraphNode<?>> getForwardParents() {
-		return forwardParents;
+	public StringGraphNode<?> getForwardParent() {
+		return forwardParent;
 	}
 
 	public List<StringGraphNode<?>> getBackwardParents() {
@@ -90,12 +90,12 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	public <C extends StringGraphNode<?>> void addForwardChild(C child) {
     	this.forwardNodes.add(child);
-        child.addForwardParent(this);
+        child.setForwardParent(this);
     }
 
 	public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
 		this.forwardNodes.add(index, child);
-		child.addForwardParent(this);
+		child.setForwardParent(this);
 	}
 
 	public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
@@ -103,9 +103,9 @@ public abstract class StringGraphNode<V> implements Serializable {
     	child.addBackwardParent(this);
 	}
 
-    protected <P extends StringGraphNode<?>> void addForwardParent(P parent) {
-    	this.forwardParents.add(parent);
-    }
+	protected <P extends StringGraphNode<?>> void setForwardParent(P forwardParent) {
+		this.forwardParent = forwardParent;
+	}
 
 	protected <P extends StringGraphNode<?>> void addBackwardParent(P parent) {
     	this.backwardParents.add(parent);
@@ -118,7 +118,7 @@ public abstract class StringGraphNode<V> implements Serializable {
     }
 
     public <P extends StringGraphNode<?>> void removeParent(P parent) {
-    	this.forwardParents.remove(parent);
+    	if (!isRoot() && getForwardParent().equals(parent)) { setForwardParent(null); }
     	this.backwardParents.remove(parent);
     }
 
@@ -222,18 +222,27 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	/**
-	 * Creates the list of principal nodes following the algorithm described in Section 4.4.1:
+	 * Creates the set of principal nodes following the algorithm described in Section 4.4.1:
 	 * <ul>
 	 *     <li><strong>Case 1:</strong> if this is an OR node, it is the union of all principal nodes of each child of this node</li>
 	 *     <li><strong>Case 2:</strong> for every other type of node, it returns the node itself</li>
 	 * </ul>
 	 *
-	 * @return the list of Principal Nodes
+	 * @return the set of Principal Nodes
 	 */
-	public List<StringGraphNode<?>> getPrincipalNodes() {
-		return List.of(this);
+	public Set<StringGraphNode<?>> getPrincipalNodes() {
+		return Set.of(this);
 	}
 
+	/**
+	 * Creates the set of principal labels following the algorithm described in Section 4.4.1:
+	 * It is the set containing the labels of all principal nodes.
+	 *
+	 * @return the set of Principal Labels
+	 */
+	public Set<String> getPrincipalLabels() {
+		return getPrincipalNodes().stream().map(StringGraphNode::getLabel).collect(Collectors.toSet());
+	}
 	/**
 	 * Creates a deep copy of the current node, cloning all descendant objects
 	 * Credits to <a href="https://alvinalexander.com">Alvin Alexander</a>
@@ -297,7 +306,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * @param edges set of edges represented with the Map.Entry entity
 	 * @return true if n is less or equal then m, false otherwise
 	 */
-	public static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
+	private static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
 
 		// case (1)
 		if (edges.contains(StringGraphNode.createEdge(n, m))) {
@@ -385,7 +394,9 @@ public abstract class StringGraphNode<V> implements Serializable {
 		// case (6)
 		return (n.getLabel().equals( m.getLabel() ));
 	}
-
+	public static boolean isLessOrEqual(StringGraphNode<?> n, StringGraphNode<?> m) {
+		return partialOrderAux(n,m,new HashSet<>());
+	}
 
 	/**
 	 * Auxiliary function for implementing Contains.
