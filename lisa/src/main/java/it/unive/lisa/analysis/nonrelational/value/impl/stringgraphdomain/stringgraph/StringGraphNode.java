@@ -222,27 +222,18 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	/**
-	 * Creates the set of principal nodes following the algorithm described in Section 4.4.1:
+	 * Creates the list of principal nodes following the algorithm described in Section 4.4.1:
 	 * <ul>
 	 *     <li><strong>Case 1:</strong> if this is an OR node, it is the union of all principal nodes of each child of this node</li>
 	 *     <li><strong>Case 2:</strong> for every other type of node, it returns the node itself</li>
 	 * </ul>
 	 *
-	 * @return the set of Principal Nodes
+	 * @return the list of Principal Nodes
 	 */
-	public Set<StringGraphNode<?>> getPrincipalNodes() {
-		return Set.of(this);
+	public List<StringGraphNode<?>> getPrincipalNodes() {
+		return List.of(this);
 	}
 
-	/**
-	 * Creates the set of principal labels following the algorithm described in Section 4.4.1:
-	 * It is the set containing the labels of all principal nodes.
-	 *
-	 * @return the set of Principal Labels
-	 */
-	public Set<String> getPrincipalLabels() {
-		return getPrincipalNodes().stream().map(StringGraphNode::getLabel).collect(Collectors.toSet());
-	}
 	/**
 	 * Creates a deep copy of the current node, cloning all descendant objects
 	 * Credits to <a href="https://alvinalexander.com">Alvin Alexander</a>
@@ -306,7 +297,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * @param edges set of edges represented with the Map.Entry entity
 	 * @return true if n is less or equal then m, false otherwise
 	 */
-	private static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
+	public static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
 
 		// case (1)
 		if (edges.contains(StringGraphNode.createEdge(n, m))) {
@@ -394,9 +385,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 		// case (6)
 		return (n.getLabel().equals( m.getLabel() ));
 	}
-	public static boolean isLessOrEqual(StringGraphNode<?> n, StringGraphNode<?> m) {
-		return partialOrderAux(n,m,new HashSet<>());
-	}
+
 
 	/**
 	 * Auxiliary function for implementing Contains.
