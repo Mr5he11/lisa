@@ -35,7 +35,11 @@ public class StringGraphTest {
         StringGraphNode<?> node1 = new OrStringGraphNode();
         node1.addForwardChild(new ConstStringGraphNode(ConstValues.MIN));
         node1.addForwardChild(new ConstStringGraphNode(ConstValues.MIN));
+        System.out.println("----NODE 1 BEFORE----");
+        System.out.println(node1);
         StringGraphNode<?> result1 = SGNUtils.compact(node1);
+        System.out.println("----NODE 1 COMPACTED----");
+        System.out.println(result1);
         assert result1 instanceof ConstStringGraphNode && result1.getValue().equals(ConstValues.MIN);
 
         // case 2
@@ -43,13 +47,15 @@ public class StringGraphTest {
         node2.addForwardChild(new ConstStringGraphNode(ConstValues.MIN));
         node2.addForwardChild(new SimpleStringGraphNode("a"));
         node2.addForwardChild(new SimpleStringGraphNode("b"));
+        System.out.println("----NODE 2 BEFORE----");
+        System.out.println(node2);
         StringGraphNode<?> result2 = SGNUtils.compact(node2);
+        System.out.println("----NODE 2 COMPACTED----");
+        System.out.println(result2);
         assert result2 instanceof OrStringGraphNode &&
                 result2.getOutDegree() == 2 &&
                 result2.getForwardNodes().get(0).getValue().equals("a") &&
                 result2.getForwardNodes().get(1).getValue().equals("b");
-
-        System.out.println(result2);
     }
 
     @Test

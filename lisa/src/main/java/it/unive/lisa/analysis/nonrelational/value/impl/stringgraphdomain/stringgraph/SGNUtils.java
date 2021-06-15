@@ -24,24 +24,25 @@ public abstract class SGNUtils {
         if (node == null)
             return null;
 
-        StringGraphNode<?> oldNode = node;
-        StringGraphNode<?> newNode = compactAux(oldNode);
-        while (newNode != null && !(newNode.toString().equals(oldNode.toString()))) {
-            oldNode = newNode;
-            newNode =  compactAux(oldNode);
+        StringGraphNode<?> newNode = deepClone(node);
+        if (newNode != null) {
+            int hash = 0;
+            do {
+                hash = newNode.hashCode();
+                newNode = compactAux(newNode);
+            } while (newNode != null && !(newNode.hashCode() == hash));
+            return newNode;
+        } else {
+            return null;
         }
-        return newNode;
     }
 
     private static StringGraphNode<?> compactAux(StringGraphNode<?> node) {
-        boolean isModified = false;
-
         // The algorithm is bottom up, starting from the leaves, so it recursively gets to the leaves first
-        List<StringGraphNode> children = new ArrayList<>(node.getForwardNodes());
-        for (StringGraphNode child : children) {
+        List<StringGraphNode<?>> children = new ArrayList<>(node.getForwardNodes());
+        for (StringGraphNode<?> child : children) {
             StringGraphNode<?> newChild = compactAux(child);
             if (newChild != child) {
-                isModified = true;
                 node.removeChild(child);
                 if (newChild != null) {
                     node.addForwardChild(newChild);
@@ -86,7 +87,6 @@ public abstract class SGNUtils {
 
         // Rule 8
         // TODO: must do rule 8
-        // if (node.)
 
         if (node instanceof OrStringGraphNode) {
             // Rule 2
@@ -117,10 +117,10 @@ public abstract class SGNUtils {
                 }
             }
 
-            return deepClone(node);
+            return node;
         }
 
-        return isModified ? deepClone(node) : node;
+        return node;
     }
 
     /**
