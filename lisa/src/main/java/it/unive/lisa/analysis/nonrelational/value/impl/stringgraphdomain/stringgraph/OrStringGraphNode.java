@@ -1,6 +1,13 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
-import java.util.*;
+
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+
 
 public class OrStringGraphNode extends StringGraphNode<Void> {
 
@@ -13,11 +20,11 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 	public String toString() {
         return "OR"
                 + getForwardNodes().stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(", ", " [", (getBackwardNodes().isEmpty() ? "" : ", ")))
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", ", " [", (getBackwardNodes().isEmpty() ? "" : ", ")))
                 + getBackwardNodes().stream()
-                .map(StringGraphNode::getLabel)
-                .collect(Collectors.joining(", ", "", "] "));
+                    .map(StringGraphNode::getLabel)
+                    .collect(Collectors.joining(", ", "", "] "));
 	}
 
 	@Override
@@ -66,23 +73,9 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 
 	@Override
 	public Set<StringGraphNode<?>> getPrincipalNodes() {
-/*
-		List<StringGraphNode<?>> principalNodes = new ArrayList<>();
-		
-		List<StringGraphNode<?>> children = this.getForwardNodes();
-		for (int i=0; i<getOutDegree(); i++) {
-			
-			List<StringGraphNode<?>> childPrNodes = children.get(i).getPrincipalNodes();
-			if (childPrNodes != null) {
-                principalNodes.addAll(childPrNodes);
-			}
-		}
-		return principalNodes;
-*/
-        final Set<StringGraphNode<?>> set = new HashSet<>();
-        getForwardNodes().forEach(stringGraphNode -> set.addAll(stringGraphNode.getPrincipalNodes()));
-
-        return set;
+        return  getForwardNodes().stream()
+                .flatMap(s->s.getPrincipalNodes().stream())
+                .collect(Collectors.toSet());
     }
 
     @Override

@@ -4,16 +4,23 @@ import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.*;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.*;
+import it.unive.lisa.symbolic.value.BinaryOperator;
+import it.unive.lisa.symbolic.value.Constant;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 	private final StringGraphNode<?> root;
-	
+
+	private final static StringGraphDomain TOP = new StringGraphDomain(new ConstStringGraphNode(ConstValues.MAX));
+	private final static StringGraphDomain BOTTOM = new StringGraphDomain(new ConstStringGraphNode(ConstValues.MIN));
+
 	public StringGraphDomain() {
-		this( new ConstStringGraphNode(ConstValues.MIN) );
+		this( new ConstStringGraphNode(ConstValues.MAX) );
 	}
 	
 	public StringGraphDomain(StringGraphNode<?> root) {
@@ -27,12 +34,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 	@Override
 	public StringGraphDomain top() {
-		return new StringGraphDomain(new ConstStringGraphNode(ConstValues.MAX));
+		return TOP;
 	}
 
 	@Override
 	public StringGraphDomain bottom() {
-		return new StringGraphDomain(new ConstStringGraphNode(ConstValues.MIN));
+		return BOTTOM;
 	}
 
 	@Override
@@ -48,31 +55,16 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected StringGraphDomain evalBinaryExpression(BinaryOperator operator, StringGraphDomain left,
 			StringGraphDomain right, ProgramPoint pp) {
-		
 		if (BinaryOperator.STRING_CONCAT == operator) {
 
 			StringGraphNode<?> concatNode = new ConcatStringGraphNode();
 			concatNode.addForwardChild(left.root);
 			concatNode.addForwardChild(right.root);
 
-			StringGraphNode<?> newNode = null;
-			try {
-				newNode = concatNode.normalize();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
+			StringGraphNode<?> newNode = concatNode.normalize();
 			return new StringGraphDomain(newNode);
-			
 		}
 
-		return top();
-	}
-
-
-	@Override
-	protected StringGraphDomain evalTernaryExpression(TernaryOperator operator, StringGraphDomain left,
-			StringGraphDomain middle, StringGraphDomain right, ProgramPoint pp) {
 		return top();
 	}
 	
@@ -91,14 +83,8 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	}
 
 	@Override
-	public StringGraphDomain glbAux(StringGraphDomain other) {
-		return super.glbAux(other);
-	}
-
-	@Override
 	protected StringGraphDomain wideningAux(StringGraphDomain other) throws SemanticException {
 		// 4.4.4
-
 		StringGraphDomain go = this;
 		StringGraphNode<?> orNode = new OrStringGraphNode();
 		orNode.addForwardChild(this.root);
@@ -108,15 +94,17 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 		// Topological clash between vo and vn:
 		// 	(1): [vo]: OR node in gOld and [vn]: OR node in gNew where prlb(vo) <> prlb(vn)
-		// 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn)
+		// 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn) :: TODO NIY
 
-		StringGraphNode<?> vo = null, vn = null;
+		StringGraphNode<?> vo = null;
+		StringGraphNode<?> vn = null;
 
 		List<StringGraphNode<?>> oldNodes = go.root.getForwardNodes();
 		List<StringGraphNode<?>> newNodes = gn.root.getForwardNodes();
 
+		// TODO use streams?
+		boolean found = false;
 		for(StringGraphNode<?> oldNode: oldNodes) {
-			boolean found = false;
 			for(StringGraphNode<?> newNode: newNodes) {
 
 				if (oldNode instanceof OrStringGraphNode && newNode instanceof OrStringGraphNode) {
@@ -128,7 +116,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 					if (oldPrlb != null && newPrlb == null) { found = true; }
 					if (oldPrlb != null && !oldPrlb.equals(newPrlb)) { found = true; }
 
-					if (found) {
+					if (found) { // stop inner loop
 						vo = oldNode;
 						vn = newNode;
 						break;
@@ -136,7 +124,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 				}
 			}
 
-			if (found) {
+			if (found) { // stop outer loop
 				break;
 			}
 		}
@@ -144,22 +132,24 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 		// If one of the previous is true, then search for an ancestor [va] of [vn] such that prlb(vn) is INCLUDED in prlb(va)
 		// else do nothing
-		if (vo == null || vn == null) {
+		if (!found) {
 			return top();
 		}
 
 		StringGraphNode<?> va = null;
 		Set<String> nPrlb = vn.getPrincipalLabels();
 
-		StringGraphNode<?> parent = vn.getForwardParent();
-		while(va == null && parent != null) {
-			Set<String> parentPrlb = parent.getPrincipalLabels();
-			if (parentPrlb != null && parentPrlb.containsAll(nPrlb)) {
-				// found ancestor!
-				va = parent;
-			}
+		if (nPrlb != null) {
+			StringGraphNode<?> parent = vn.getForwardParent();
+			while (va == null && parent != null) {
+				Set<String> parentPrlb = parent.getPrincipalLabels();
+				if (parentPrlb != null && parentPrlb.containsAll(nPrlb)) {
+					// found ancestor!
+					va = parent;
+				}
 
-			parent = parent.getForwardParent();
+				parent = parent.getForwardParent();
+			}
 		}
 
 		if (va == null) {
@@ -167,55 +157,57 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		}
 		// If ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
 		// else replace va with a OR node with [va, vn] as children. Then re-apply widening.
-		if (StringGraphNode.isLessOrEqual(vn, va)) {
+		if (vn.isLessOrEqual(va)) {
+			// introduce a cycle in the graph!
 			vn.addBackwardChild(va);
 			return gn;
 		} else {
 			OrStringGraphNode or = new OrStringGraphNode();
 
+			// remove va from parent and add or as child
 			StringGraphNode<?> vaOriginalParent = va.getForwardParent();
 			vaOriginalParent.removeChild(va);
 			vaOriginalParent.addForwardChild(or);
 
+			// remove vn from parent (since now vn is child of or)
 			vn.getForwardParent().removeChild(vn);
 
+			// add va and vn as children
 			or.addForwardChild(va);
 			or.addForwardChild(vn);
 
-			return this.wideningAux(gn); // ???
+			return this.wideningAux(gn);
 			//return other.wideningAux(gn); // ???
 		}
 	}
 
 	@Override
 	protected boolean lessOrEqualAux(StringGraphDomain other) throws SemanticException {
-		return StringGraphNode.isLessOrEqual(this.root, other.root);
+		return this.root.isLessOrEqual(other.root);
 	}
 
 	@Override
 	protected SemanticDomain.Satisfiability satisfiesBinaryExpression(BinaryOperator operator, StringGraphDomain left, StringGraphDomain right, ProgramPoint pp) {
-
 		if (BinaryOperator.STRING_CONTAINS == operator) {
 			// 4.4.6
 			// checking only for a single character
-			SimpleStringGraphNode simpleGraphNode = StringGraphNode.getSingleCharacterString(right.root);
+			SimpleStringGraphNode simpleGraphNode = SGNUtils.getSingleCharacterString(right.root);
 			if (simpleGraphNode != null) {
 				Character c = simpleGraphNode.getValueAsChar();
 
 				// check if "true" condition of Section 4.4.6 - Table VII holds
-				if (StringGraphNode.containsCheckTrueAux(left.root, c)) {
+				if (SGNUtils.strContainsAux_checkTrue(left.root, c)) {
 					return SemanticDomain.Satisfiability.SATISFIED;
 				}
 
 				// checks if "false" condition of Section 4.4.6 - Table VII holds
-				if (StringGraphNode.containsCheckFalseAux(left.root, c)) {
+				if (SGNUtils.strContainsAux_checkFalse(left.root, c)) {
 					return SemanticDomain.Satisfiability.NOT_SATISFIED;
 				}
 
 				return SemanticDomain.Satisfiability.UNKNOWN;
 			}
 		}
-
 
 		return SemanticDomain.Satisfiability.UNKNOWN;
 	}
@@ -230,6 +222,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(root);
+		return Objects.hashCode(root);
 	}
 }

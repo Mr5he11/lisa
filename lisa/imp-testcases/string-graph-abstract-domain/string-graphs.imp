@@ -1,8 +1,30 @@
 class sg {
-    f0() {
-        def x = "c";
+    f_contains() {
+        def x = "ciao";
+        if (strcon(x,"c")) {
+            x = strcat(x,"a");
+        }
+    }
+
+    f_not_contains() {
+        def x = "ciao";
         if (strcon(x,"u")) {
             x = strcat(x,"a");
         }
     }
+
+    f_loop() {
+            def x = "ciao";
+            while (strcon(x,"c")) {
+                x = strcat(x,"a");
+            }
+        }
+
+    f_not_loop() {
+        def x = "ciao";
+        while (strcon(x,"u")) {
+            x = strcat(x,"a");
+        }
+    }
+
 }

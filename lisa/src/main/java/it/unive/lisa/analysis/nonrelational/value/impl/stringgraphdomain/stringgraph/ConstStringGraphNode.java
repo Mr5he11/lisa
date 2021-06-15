@@ -3,7 +3,13 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConstStringGraphNode extends StringGraphNode<ConstValues> {
+public class ConstStringGraphNode extends StringGraphNode<ConstStringGraphNode.ConstValues> {
+    public enum ConstValues {
+        MAX,
+        MIN,
+        EMPTY,
+        ALL_STRINGS
+    }
 
     public ConstStringGraphNode() {
         super();

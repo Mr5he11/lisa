@@ -1,12 +1,13 @@
 package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
 
-import javassist.Loader;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
 
-import java.io.*;
-import java.lang.reflect.InvocationTargetException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+
 
 public abstract class StringGraphNode<V> implements Serializable {
 
@@ -123,7 +124,10 @@ public abstract class StringGraphNode<V> implements Serializable {
     }
 
 	public List<StringGraphNode<?>> getChildren() {
-		return Stream.concat(getForwardNodes().stream(), getBackwardNodes().stream()).distinct().collect(Collectors.toList());
+		return Stream
+				.concat(getForwardNodes().stream(), getBackwardNodes().stream())
+				.distinct()
+				.collect(Collectors.toList());
 	}
 
 	public V getValue() { return value; }
@@ -170,9 +174,9 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * overwritten by rule 4. Plus, note that rule 5 is always implicitly satisfied because simple and const nodes
 	 * are not allowed to have children, so a cycle will always have at least one functor node.
 	 */
+	@SuppressWarnings("unchecked")
 	public StringGraphNode<?> normalize() {
-		StringGraphNode<V> normalized = null;
-
+		StringGraphNode<V> normalized;
 		try {
 			normalized = this.getClass().getDeclaredConstructor().newInstance();
 			if (normalized instanceof SimpleStringGraphNode || normalized instanceof ConstStringGraphNode)
@@ -230,233 +234,31 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 *
 	 * @return the list of Principal Nodes
 	 */
-	public List<StringGraphNode<?>> getPrincipalNodes() {
-		return List.of(this);
+	public Set<StringGraphNode<?>> getPrincipalNodes() {
+		return Set.of(this);
 	}
 
-	/**
-	 * Creates a deep copy of the current node, cloning all descendant objects
-	 * Credits to <a href="https://alvinalexander.com">Alvin Alexander</a>
-	 *
-	 * @param node The node to be cloned
-	 * @return the cloned object
-	 * @throws IOException
-	 * @throws ClassNotFoundException
-	 */
-	public static StringGraphNode<?> deepClone(StringGraphNode<?> node) throws IOException, ClassNotFoundException {
-		ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-		ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteOutputStream);
-		objectOutputStream.writeObject(node);
-		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
-		ObjectInputStream objectInputStream = new ObjectInputStream(byteInputStream);
-		return (StringGraphNode<?>) objectInputStream.readObject();
-	}
-
-	public static SimpleStringGraphNode getSingleCharacterString(StringGraphNode<?> node) {
-		if (node instanceof SimpleStringGraphNode) {
-			return (SimpleStringGraphNode)node;
-		}
-		if (node instanceof ConcatStringGraphNode) {
-			List<StringGraphNode<?>> children = node.getChildren();
-			if (
-				node.getOutDegree() == 3 &&
-				"\"".equals(children.get(0).getValue()) &&
-				"\"".equals(children.get(2).getValue())
-			) {
-				return getSingleCharacterString(children.get(1));
-			}
-
-			if (node.getOutDegree() == 1) {
-				return getSingleCharacterString(children.get(0));
-			}
-		}
-
-		return null;
+	public Set<String> getPrincipalLabels() {
+		return getPrincipalNodes().stream()
+				.map(StringGraphNode::getLabel)
+				.collect(Collectors.toSet());
 	}
 
 
-	/**
-	 * Auxiliary function for implementing partial ordering.
-	 * Following Section 4.4.2, this recursive algorithm checks the denotations of two nodes and returns true if
-	 * the denotation of node n is contained or equal to the denotation of node m.
-	 * The cases implemented in this function are the following:
-	 * <ul>
-	 *     <li><strong>Case 1:</strong> if the edge that links the two roots is already in the set, return true</li>
-	 *     <li><strong>Case 2:</strong> if the label of the right root is NAX, return true</li>
-	 *     <li><strong>Case 3:</strong> if the two roots are concat node, with same length k, check for each child if the property holds,
-	 *     		while adding to the current set of edges a new edge formed by the current nodes n and m.</li>
-	 *     <li><strong>Case 4:</strong> if the two roots are OR node, take all the children of the left node n and check if the property holds for each of them,
-	 *     		comparing with the root m, while adding to the current set of edges a new edge formed by the current nodes n and m.</li>
-	 *     <li><strong>Case 5:</strong> if the right root m is an OR node, look for a node in the Principal Nodes of m which has the same label as the label of n.
-	 *     		Then check if the property holds for n and this particular node, adding to the current set of edge the edge (n,m)</li>
-	 *     <li><strong>Case 6:</strong> last check, if none of the previous checks has passed, is to verify that the label of node n is equal to the label of node m.</li>
-	 * </ul>
-	 *
-	 * @param n the root of the graph tree to compare
-	 * @param m the root of the other graph tree to compare
-	 * @param edges set of edges represented with the Map.Entry entity
-	 * @return true if n is less or equal then m, false otherwise
-	 */
-	public static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
-
-		// case (1)
-		if (edges.contains(StringGraphNode.createEdge(n, m))) {
-			return true;
-		}
-
-		// case (2)
-		else if (m instanceof ConstStringGraphNode) {
-			ConstValues constValue = ((ConstStringGraphNode)m).getValue();
-
-			if (ConstValues.MAX == constValue) {
-				return true;
-			}
-		}
-
-		// case (3)
-		else if (n instanceof ConcatStringGraphNode && m instanceof ConcatStringGraphNode) {
-			ConcatStringGraphNode concatN = (ConcatStringGraphNode)n;
-			ConcatStringGraphNode concatM = (ConcatStringGraphNode)m;
-
-			List<StringGraphNode<?>> childrenN = n.getChildren();
-			List<StringGraphNode<?>> childrenM = m.getChildren();
-
-			if (Objects.equals(concatN.getValue(), concatM.getValue())) {
-
-				// add current edge to edgeSet
-				edges.add(StringGraphNode.createEdge(n, m));
-
-				// for each i in [0,k] must hold: <=(n/i, m/i, edges+{m,n})
-				for (int i=0; i<concatN.getValue(); i++) {
-
-					boolean isLessOrEqual = partialOrderAux(childrenN.get(i), childrenM.get(i), edges);
-
-					if (!isLessOrEqual) return false;
-				}
-
-				return true;
-			}
-		}
-
-		// case (4)
-		else if (n instanceof OrStringGraphNode && m instanceof OrStringGraphNode) {
-			int k = n.getOutDegree();
-			List<StringGraphNode<?>> children = n.getChildren();
-
-			// add current edge to edgeSet
-			edges.add(StringGraphNode.createEdge(n, m));
-
-			// for each i in [0,k] must hold: <=(n/i, m, edges+{m,n})
-			for (int i=0; i<k; i++) {
-
-				boolean isLessOrEqual = partialOrderAux(children.get(i), m, edges);
-
-				if (!isLessOrEqual) return false;
-			}
-
-			return true;
-
-		}
-
-		// case (5)
-		else if (m instanceof OrStringGraphNode) {
-
-			StringGraphNode<?> md = null;
-
-			// look for a node (named md) in prnd(m) such that lb(n) == lb(md)
-			for (StringGraphNode<?> prnd: m.getPrincipalNodes()) {
-				String prndLbl = prnd.getLabel();
-				if ( (prndLbl == null && n.getLabel() == null) ||
-						(prndLbl != null && prnd.getLabel().equals(n.getLabel()))) {
-
-					md = prnd; // found one
-					break;
-				}
-			}
-
-
-			if (md != null) {
-				edges.add(StringGraphNode.createEdge(n, m));
-				return partialOrderAux(n, md, edges);
-			}
-
-		}
-
-		// case (6)
-		return (n.getLabel().equals( m.getLabel() ));
+	public boolean isLessOrEqual(StringGraphNode<?> other) {
+		return SGNUtils.partialOrderAux(this, other, new HashSet<>());
 	}
 
-
-	/**
-	 * Auxiliary function for implementing Contains.
-	 * Following Section 4.4.6 - Table VII, this recursive algorithm checks whether there is a Concat Node with a child node
-	 * which label is equal to the second argument of the function
-	 *
-	 * @param node the root of the graph tree of interest
-	 * @param c the character which has to be contained in the graph tree with root node
-	 * @return true iff there is a concat node with a node labeled 'c'
-	 */
-	public static boolean containsCheckTrueAux(StringGraphNode<?> node, Character c) {
-
-		if (node instanceof SimpleStringGraphNode) {
-			return ((SimpleStringGraphNode) node).getValueAsChar().equals(c);
-		}
-
-		// do not check OR nodes here! At first iteration, left is the root, which can be an OR node!
-
-		List<StringGraphNode<?>> children = node.getChildren();
-		for (StringGraphNode<?> child: children) {
-
-			if (child instanceof OrStringGraphNode) {
-				continue;
-			}
-
-			if (child instanceof  SimpleStringGraphNode) {
-				if (containsCheckTrueAux(child, c)) {
-					return true;
-				}
-			}
-
-			if (child instanceof ConcatStringGraphNode) {
-				Integer k = ((ConcatStringGraphNode)child).getValue();
-				for (int i=0; i<k; i++) {
-
-					if (containsCheckTrueAux(child, c)) {
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		StringGraphNode<?> that = (StringGraphNode<?>) o;
+		return Objects.equals(value, that.value) && Objects.equals(forwardParent, that.forwardParent) && Objects.equals(backwardParents, that.backwardParents);
 	}
 
-	/**
-	 * Auxiliary function for implementing Contains.
-	 * Following Section 4.4.6 - Table VII, this recursive algorithm checks whether there is no node which is labelled with the character 'c' or the constant MAX
-	 *
-	 * @param node the root of the graph tree of interest
-	 * @param c the character which has NOT to be contained in the graph tree with root node
-	 * @return true iff there is no node labelled 'c' or MAX
-	 */
-	public static boolean containsCheckFalseAux(StringGraphNode<?> node, Character c) {
-
-		if (node instanceof ConstStringGraphNode) {
-			return !ConstValues.MAX.equals( ((ConstStringGraphNode)node).getValue() );
-		}
-
-		if (node instanceof SimpleStringGraphNode) {
-			return !((SimpleStringGraphNode) node).getValueAsChar().equals(c);
-		}
-
-		// for all children must hold (no node is 'c' or MAX)
-		for (StringGraphNode<?> child: node.getChildren()) {
-			if (!containsCheckFalseAux(child, c)) {
-				return false;
-			}
-		}
-
-		// survived the check
-		return true;
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(value);
 	}
 }
