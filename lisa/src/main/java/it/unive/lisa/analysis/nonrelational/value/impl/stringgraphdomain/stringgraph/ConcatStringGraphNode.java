@@ -35,6 +35,12 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     }
 
     @Override
+    public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
+        super.addForwardChild(index, child);
+        this.value += 1;
+    }
+
+    @Override
     public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
         super.addBackwardChild(child);
         this.value += 1;
@@ -89,18 +95,19 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         } else {
             int index = 0;
             boolean allMax = true;
+
             while (index < this.getChildren().size()) {
                 StringGraphNode<?> child = this.getChildren().get(index);
                 // Rule 3 and Rule 4
                 if (child instanceof ConcatStringGraphNode && child.getInDegree() < 2) {
-                    int i = 0;
                     while (child.getChildren().size() > 0) {
                         StringGraphNode<?> c = child.getChildren().get(0);
-                        this.addForwardChild(index + i, c);
+                        this.addForwardChild(index, c);
                         child.removeChild(c);
-                        i += 1;
+                        index += 1;
                     }
                     this.removeChild(child);
+                    allMax = false;
                 } else {
                     index += 1;
                     allMax = allMax && child instanceof ConstStringGraphNode && child.getValue() == ConstValues.MAX.name();
@@ -111,7 +118,6 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
                 return new ConstStringGraphNode(ConstValues.MAX);
             }
         }
-        this.setValue(this.getOutDegree());
         return this;
     }
 }

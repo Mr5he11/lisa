@@ -130,7 +130,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 	public List<StringGraphNode<?>> getChildren() {
 		return Stream
 				.concat(getForwardNodes().stream(), getBackwardNodes().stream())
-				.distinct()
 				.collect(Collectors.toList());
 	}
 
