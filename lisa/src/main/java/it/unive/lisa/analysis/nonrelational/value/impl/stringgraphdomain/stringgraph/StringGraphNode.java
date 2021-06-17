@@ -16,12 +16,16 @@ public abstract class StringGraphNode<V> implements Serializable {
 	protected final List<StringGraphNode<?>> backwardNodes;
 	protected StringGraphNode<?> forwardParent;
 	protected final List<StringGraphNode<?>> backwardParents;
+	public final String id;
+	private static int counter = 0;
 	
 	public StringGraphNode() {
 		this.forwardNodes = new ArrayList<>();
 		this.backwardNodes = new ArrayList<>();
 		this.backwardParents = new ArrayList<>();
 		this.forwardParent = null;
+		this.id = "id_" + StringGraphNode.counter;
+		StringGraphNode.counter += 1;
 	}
 	
 	/**

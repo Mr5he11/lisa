@@ -57,6 +57,29 @@ public class StringGraphTest {
                 result2.getOutDegree() == 2 &&
                 result2.getForwardNodes().get(0).getValue().equals("a") &&
                 result2.getForwardNodes().get(1).getValue().equals("b");
+
+        // case 8
+        StringGraphNode<?> node8 = new ConcatStringGraphNode();
+        StringGraphNode<?> node8simple1 = new SimpleStringGraphNode("a");
+        node8.addForwardChild(node8simple1);
+        StringGraphNode<?> node8or1 = new OrStringGraphNode();
+        node8.addForwardChild(node8or1);
+        StringGraphNode<?> node8concat1 = new ConcatStringGraphNode();
+        node8or1.addForwardChild(node8concat1);
+        node8concat1.addBackwardChild(node8or1);
+        StringGraphNode<?> node8or2 = new OrStringGraphNode();
+        StringGraphNode<?> node8simple2 = new SimpleStringGraphNode("b");
+        node8or2.addBackwardChild(node8);
+        node8concat1.addForwardChild(node8simple2);
+
+        System.out.println("----NODE 8 BEFORE----");
+        System.out.println(node8);
+        System.out.println(node8.getDenotation());
+        StringGraphNode<?> result8 = SGNUtils.compact(node8);
+        System.out.println("----NODE 8 COMPACTED----");
+        System.out.println(result8);
+        System.out.println(result8.getDenotation());
+
     }
 
     @Test

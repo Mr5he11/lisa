@@ -14,11 +14,11 @@ class sg {
     }
 
     f_loop() {
-            def x = "ciao";
-            while (strcon(x,"c")) {
-                x = strcat(x,"a");
-            }
+        def x = "ciao";
+        while (strcon(x,"c")) {
+            x = strcat(x,"a");
         }
+    }
 
     f_not_loop() {
         def x = "ciao";

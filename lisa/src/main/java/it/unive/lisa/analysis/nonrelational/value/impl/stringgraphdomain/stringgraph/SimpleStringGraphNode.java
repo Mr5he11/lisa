@@ -37,7 +37,7 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
 
 	@Override
     public List<String> getDenotation() {
-        return List.of(this.toString());
+        return List.of(this.value);
     }
 
     @Override

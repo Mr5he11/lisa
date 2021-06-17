@@ -74,13 +74,7 @@ public abstract class SGNUtils {
             StringGraphNode<?> forwardParent = node.getForwardParent();
             forwardParent.removeChild(node);
             forwardParent.addForwardChild(child);
-            /*
-            List<StringGraphNode<?>> forwardParents = new ArrayList<>(node.getForwardParents());
-            for (StringGraphNode<?> parent : forwardParents) {
-                parent.removeChild(node);
-                parent.addForwardChild(child);
-            }
-            */
+
             List<StringGraphNode<?>> backwardParents = new ArrayList<>(node.getBackwardParents());
             for (StringGraphNode<?> parent : backwardParents) {
                 parent.removeChild(node);
@@ -91,7 +85,22 @@ public abstract class SGNUtils {
         }
 
         // Rule 8
-        // TODO: must do rule 8
+        if (node.getBackwardNodes().size() > 0) {
+            List<StringGraphNode<?>> backwardChildren = new ArrayList<>(node.getBackwardNodes());
+            for (StringGraphNode<?> child : backwardChildren) {
+                List<StringGraphNode<?>> forwardPath = getForwardPath(child, node);
+                if (forwardPath.size() > 0 && forwardPath.stream().allMatch(k -> k instanceof OrStringGraphNode)) {
+                    for (StringGraphNode<?> k : forwardPath) {
+                        List<StringGraphNode<?>> kBackwardParents = new ArrayList<>(k.getBackwardParents());
+                        for (StringGraphNode<?> l : kBackwardParents) {
+                            l.removeChild(k);
+                            l.addBackwardChild(child);
+                        }
+                    }
+                    return node;
+                }
+            }
+        }
 
         if (node instanceof OrStringGraphNode) {
             // Rule 2
