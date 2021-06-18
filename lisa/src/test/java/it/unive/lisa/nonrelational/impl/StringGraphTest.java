@@ -25,7 +25,7 @@ public class StringGraphTest {
         concat3.addForwardChild(new ConstStringGraphNode(ConstValues.MAX));
         System.out.println("-----------BEFORE-----------");
         System.out.println(SGNUtils.compact(root));
-        concat2.normalize();
+        StringGraphNode<?> result = SGNUtils.compact(concat2);
         System.out.println(root);
         System.out.println("------------AFTER-----------");
     }

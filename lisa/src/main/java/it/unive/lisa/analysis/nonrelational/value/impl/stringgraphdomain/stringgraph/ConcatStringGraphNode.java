@@ -83,38 +83,4 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         result.add(s);
         return result;
     }
-
-    @Override
-    public StringGraphNode<?> normalizeAux() {
-        if (this.getOutDegree() == 1) {
-            // Rule 1
-            return this.getChildren().get(0);
-        } else {
-            int index = 0;
-            boolean allMax = true;
-
-            while (index < this.getChildren().size()) {
-                StringGraphNode<?> child = this.getChildren().get(index);
-                // Rule 3 and Rule 4
-                if (child instanceof ConcatStringGraphNode && child.getInDegree() < 2) {
-                    while (child.getChildren().size() > 0) {
-                        StringGraphNode<?> c = child.getChildren().get(0);
-                        this.addForwardChild(index, c);
-                        child.removeChild(c);
-                        index += 1;
-                    }
-                    this.removeChild(child);
-                    allMax = false;
-                } else {
-                    index += 1;
-                    allMax = allMax && child instanceof ConstStringGraphNode && child.getValue() == ConstValues.MAX.name();
-                }
-            }
-            if (allMax) {
-                // Rule 2
-                return new ConstStringGraphNode(ConstValues.MAX);
-            }
-        }
-        return this;
-    }
 }

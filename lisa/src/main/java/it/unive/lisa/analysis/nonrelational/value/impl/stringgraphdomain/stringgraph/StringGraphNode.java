@@ -12,11 +12,11 @@ import java.util.stream.Stream;
 public abstract class StringGraphNode<V> implements Serializable {
 
 	protected V value;
+	public final String id;
+	protected StringGraphNode<?> forwardParent;
 	protected final List<StringGraphNode<?>> forwardNodes;
 	protected final List<StringGraphNode<?>> backwardNodes;
-	protected StringGraphNode<?> forwardParent;
 	protected final List<StringGraphNode<?>> backwardParents;
-	public final String id;
 	private static int counter = 0;
 	
 	public StringGraphNode() {
@@ -34,7 +34,6 @@ public abstract class StringGraphNode<V> implements Serializable {
      * or if it has multiple characters. If so, this produces a String Graph with a {@link ConcatStringGraphNode} as root
      * and all characters of the string as {@link SimpleStringGraphNode} nodes
      *
-     * 
      * @param value parameter included in the created {@link StringGraphNode}
      * @return a {@link SimpleStringGraphNode} or a ConcatNode {@link ConcatStringGraphNode}
      */
@@ -151,59 +150,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 	 * @return the denotation of the string graph, as a List of Strings.
 	 */
 	public abstract List<String> getDenotation();
-
-	/**
-	 * Normalizes the String graph having root in the current node. In order to do so, it applies the following rules:
-	 * <ul>
-	 *     <li><strong>Rule 1:</strong>no nodes with empty denotation must be present, nodes with empty denotation
-	 *     should be removed</li>
-	 * 	   <li><strong>Rule 2:</strong>each OR node has strictly more than one child, otherwise it can be replaced
-	 * 	   with its child.</li>
-	 * 	   <li><strong>Rule 3</strong>Each child of an OR node should not be a MAX child,otherwise the entire OR
-	 * 	   subgraph can be replaced with a MAX node</li>
-	 * 	   <li><strong>Rule 4:</strong>if a forward arc connects two OR nodes, the child node mast have an
-	 * 	   in-degree > 1, otherwise it should be removed, assigning its children to the parent node</li>
-	 * 	   <li><strong>Rule 5:</strong>Each cycle should have at least one functor node (OR or CONCAT)
-	 * 	   otherwise the whole cycle can be removed</li>
-	 *     <li><strong>Rule 6:</strong> Concat nodes with only one child should be replaced with their only child</li>
-	 *     <li><strong>Rule 7:</strong> Concat nodes with only MAX node children should be replaced
-	 *     with a MAX node</li>
-	 *     <li><strong>Rule 8:</strong> If two concat nodes are successive children of a concat parent, these two
-	 *     nodes should be replaced with a single node having, as children, the children of the two replaced nodes
-	 *     placed in the same order they were before (only if both the replaced nodes had only one parent)</li>
-	 *     <li><strong>Rule 9:</strong> If a concat node has a concat parent, and its in-degree is 1, then it should
-	 *     be replaced by its children</li>
-	 * </ul>
-	 * All the rules have to be applied only in forward direction
-	 * <strong>NB:</strong> Rule 9 incorporates rule 8, since the action described in rule 3 will completely be
-	 * overwritten by rule 4. Plus, note that rule 5 is always implicitly satisfied because simple and const nodes
-	 * are not allowed to have children, so a cycle will always have at least one functor node.
-	 */
-	@SuppressWarnings("unchecked")
-	public StringGraphNode<?> normalize() {
-		StringGraphNode<V> normalized;
-		try {
-			normalized = this.getClass().getDeclaredConstructor().newInstance();
-			if (normalized instanceof SimpleStringGraphNode || normalized instanceof ConstStringGraphNode)
-				normalized.setValue(this.getValue());
-		} catch (Exception e) {
-			return new ConstStringGraphNode(ConstValues.EMPTY);
-		}
-
-		for (StringGraphNode<?> child : this.getForwardNodes()) {
-			if (!(child.getDenotation().isEmpty())) {
-				StringGraphNode<?> newChild = child.normalize();
-				normalized.addForwardChild(newChild);
-			}
-		}
-
-		return normalized.normalizeAux();
-	}
-
-	/**
-	 * Utility function to be override in each subclass to apply specific behaviour
-	 */
-	protected StringGraphNode<?> normalizeAux() { return this; }
 
 	/**
 	 * Says if a certain node is part of an infinite loop or not. It is a recursive methods

@@ -3,6 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -17,6 +18,18 @@ public abstract class SGNUtils {
      *     G. Jannsens, M. Bruynooghe, Report CW 108, April 1990
      * </a>
      * Algorithm 4.1.
+     *
+     * Moreover, there are some additional rules to apply in the case of string graphs, concerning the particular
+     * case of the functor nodes CONCAT/k. Such rules can be found in the paper
+     * <a href="https://onlinelibrary.wiley.com/doi/full/10.1002/spe.2218">
+     *      A suite of abstract domains for static analysis of string values
+     *      Giulia Costantini, Pietro Ferrara, Agostino Cortesi
+     * </a> at section 4.4.1.
+     * In this context such restrictions are applied to normal string graphs, but by the fact that a
+     * normal string graph is a particular case of a compact string graph, and since compaction algorithm is not applied
+     * alone anywhere, it is safe here to apply such restrictions in the compaction process. Moreover, these restrictions
+     * are more a matter of compaction then of normalization, since they do not concern the definition of
+     * "principal label restriction".
      *
      * @param node The node to be compacted
      * @return a StringGraphNode, result of the compaction of <code>node</code>
@@ -103,6 +116,7 @@ public abstract class SGNUtils {
             }
         }
 
+        // Specific rules for or nodes
         if (node instanceof OrStringGraphNode) {
             // Rule 2
             List<StringGraphNode<?>> toBeRemoved = node.getForwardNodes().stream()
@@ -136,6 +150,46 @@ public abstract class SGNUtils {
             }
 
             return node;
+        }
+
+        // Additional rules for concat nodes, as explained in the java doc of this function
+        if (node instanceof ConcatStringGraphNode) {
+            // Rule 1 from paper A suite of abstract domains for static analysis of string values - 4.4.1
+            if (node.getOutDegree() == 1) {
+                StringGraphNode<?> newNode = node.getChildren().get(0);
+                List<StringGraphNode<?>> nodeBackwardParents = new ArrayList<>(node.getBackwardParents());
+                for (StringGraphNode<?> parent : nodeBackwardParents) {
+                    parent.removeChild(node);
+                    parent.addBackwardChild(newNode);
+                }
+                node.removeChild(newNode);
+                return newNode;
+            }
+
+            // Rule 2 from paper A suite of abstract domains for static analysis of string values - 4.4.1
+            if (
+                node.getBackwardNodes().isEmpty() &&
+                node.getForwardNodes().stream().allMatch(n -> n instanceof ConstStringGraphNode && n.getValue().equals(ConstValues.MAX))
+            ) {
+                return new ConstStringGraphNode(ConstValues.MAX);
+            }
+
+            // Rule 3/4 from paper A suite of abstract domains for static analysis of string values - 4.4.1
+            int index = 0;
+            while (index < node.getChildren().size()) {
+                StringGraphNode<?> child = node.getChildren().get(index);
+                if (child instanceof ConcatStringGraphNode && child.getInDegree() <= 1) {
+                    while (child.getChildren().size() > 0) {
+                        StringGraphNode<?> c = child.getChildren().get(0);
+                        node.addForwardChild(index, c);
+                        child.removeChild(c);
+                        index += 1;
+                    }
+                    node.removeChild(child);
+                } else {
+                    index += 1;
+                }
+            }
         }
 
         return node;
