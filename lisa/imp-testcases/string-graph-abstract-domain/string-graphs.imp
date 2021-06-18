@@ -15,7 +15,7 @@ class sg {
     }
 */
     f_loop() {
-        def x = "c";
+        def x = "ciao";
         while (strcon(x,"c")) {
             x = strcat(x,"a");
         }

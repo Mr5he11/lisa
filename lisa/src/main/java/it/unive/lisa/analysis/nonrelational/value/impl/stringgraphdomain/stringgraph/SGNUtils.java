@@ -414,7 +414,12 @@ public abstract class SGNUtils {
         return null;
     }
 
-    /** TODO */
+    /**
+     * Given a string, returns the same string stripping the initial and final quotation marks if present
+     *
+     * @param  value the initial string to be unquoted
+     * @return the unquoted string
+     * */
     public static String unquote(String value) {
 
         if (value == null)
@@ -430,18 +435,34 @@ public abstract class SGNUtils {
         return value;
     }
 
-    public static <T> T checkConditionInGraphs(StringGraphNode<?> node1, StringGraphNode<?> node2, BiFunction<StringGraphNode<?>, StringGraphNode<?>, T> function) {
+    /**
+     * Executes recursively a certain operation for each combination of 2 nodes, where one node comes from a certain
+     * source tree and the other comes from the other provided source tree.
+     *
+     * @param node1 the root of the first source tree
+     * @param node2 the root of the second source tree
+     * @param function the function to execute for each pair of nodes
+     * @param <T> the return type of function
+     * @return the first non null result that gets computed, if present - null otherwise
+     */
+    public static <T> T checkConditionInGraphs(
+            StringGraphNode<?> node1,
+            StringGraphNode<?> node2,
+            BiFunction<StringGraphNode<?>, StringGraphNode<?>, T> function
+    ) {
         T result = null;
 
         result = function.apply(node1, node2);
         if (result != null)
             return result;
 
+
         for(StringGraphNode<?> child : node1.getForwardNodes()) {
             result = checkConditionInGraphs(child, node2, function);
             if (result != null)
                 return result;
         }
+
         for(StringGraphNode<?> child : node2.getForwardNodes()) {
             result = checkConditionInGraphs(node1, child, function);
             if (result != null)
