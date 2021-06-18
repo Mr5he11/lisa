@@ -240,20 +240,19 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	@Override
 	public String toString() {
-		String start = "digraph stringgraph { ";
-		String end = " }";
-		StringBuilder result = new StringBuilder(this.isRoot() ? start : "");
-		result.append(" ").append(this.id).append(" [label=\"").append(this.getLabel()).append("\"]").append(" ");
+		return "digraph string_graph_node_" + this.id + " { " + this.toStringAux() + " }";
+	}
+
+	public String toStringAux() {
+		StringBuilder result = new StringBuilder("");
+		result.append(this.id).append(" [label=\"").append(this.getLabel()).append("\"]").append(" ");
 		for (StringGraphNode<?> child : this.getForwardNodes()) {
-			result.append(" ").append(child.toString()).append(" ");
-			result.append(" ").append(this.id).append(" -> ").append(child.id).append(" ");
+			result.append(child.toStringAux());
+			result.append(this.id).append(" -> ").append(child.id).append(" ");
 		}
 		for (StringGraphNode<?> child : this.getBackwardNodes()) {
-			result.append(" ").append(this.id).append(" -> ").append(child.id).append(" ");
+			result.append(this.id).append(" -> ").append(child.id).append(" ");
 		}
-		if (this.isRoot())
-			result.append(end);
-
 		return result.toString();
 	}
 }
