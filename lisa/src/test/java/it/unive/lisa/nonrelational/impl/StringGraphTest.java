@@ -25,8 +25,8 @@ public class StringGraphTest {
         concat3.addForwardChild(new ConstStringGraphNode(ConstValues.MAX));
         System.out.println("-----------BEFORE-----------");
         System.out.println(SGNUtils.compact(root));
-        //concat2.normalize();
-        //System.out.println(root);
+        concat2.normalize();
+        System.out.println(root);
         System.out.println("------------AFTER-----------");
     }
 
@@ -64,12 +64,13 @@ public class StringGraphTest {
         node8.addForwardChild(node8simple1);
         StringGraphNode<?> node8or1 = new OrStringGraphNode();
         node8.addForwardChild(node8or1);
-        StringGraphNode<?> node8concat1 = new ConcatStringGraphNode();
-        node8or1.addForwardChild(node8concat1);
-        node8concat1.addBackwardChild(node8or1);
         StringGraphNode<?> node8or2 = new OrStringGraphNode();
         StringGraphNode<?> node8simple2 = new SimpleStringGraphNode("b");
+        node8or1.addForwardChild(node8or2);
         node8or2.addBackwardChild(node8);
+        StringGraphNode<?> node8concat1 = new ConcatStringGraphNode();
+        node8or2.addForwardChild(node8concat1);
+        node8concat1.addBackwardChild(node8or1);
         node8concat1.addForwardChild(node8simple2);
 
         System.out.println("----NODE 8 BEFORE----");

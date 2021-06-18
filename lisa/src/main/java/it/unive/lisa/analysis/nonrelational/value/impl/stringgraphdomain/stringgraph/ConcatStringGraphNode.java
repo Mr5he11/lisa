@@ -41,8 +41,10 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
     @Override
     public <C extends StringGraphNode<?>> void removeChild(C child) {
-        super.removeChild(child);
-        this.value -= 1;
+        if (this.forwardNodes.remove(child) || this.backwardNodes.remove(child)) {
+            child.removeParent(this);
+            this.value -= 1;
+        }
     }
 
     /*
