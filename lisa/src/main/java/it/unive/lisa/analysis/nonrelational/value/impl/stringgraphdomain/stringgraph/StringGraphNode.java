@@ -254,6 +254,13 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return SGNUtils.partialOrderAux(this, other, new HashSet<>());
 	}
 
+	/**
+	 * Computes the number of nodes in a graph between two given nodes, following a depth visit.
+	 * If the node given as parameter is not an ancestor of this, then returns null
+	 *
+	 * @param ancestor the ancestor of this from which to compute the distance (depth)
+	 * @return the distance between ancestor and this if there is a forward path between them, null otherwise
+	 */
 	public Integer getDistance(StringGraphNode<?> ancestor) {
 		Integer depth = 0;
 		StringGraphNode<?> parent = getForwardParent();
@@ -272,7 +279,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	/* Since each node can have at most one forward parent, a node can be uniquely identified by its value and its children */
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -284,5 +290,24 @@ public abstract class StringGraphNode<V> implements Serializable {
 	@Override
 	public int hashCode() {
 		return Objects.hash(value, forwardNodes);
+	}
+
+	@Override
+	public String toString() {
+		String start = "digraph stringgraph { ";
+		String end = " }";
+		StringBuilder result = new StringBuilder(this.isRoot() ? start : "");
+		result.append(" ").append(this.id).append(" [label=\"").append(this.getLabel()).append("\"]").append(" ");
+		for (StringGraphNode<?> child : this.getForwardNodes()) {
+			result.append(" ").append(child.toString()).append(" ");
+			result.append(" ").append(this.id).append(" -> ").append(child.id).append(" ");
+		}
+		for (StringGraphNode<?> child : this.getBackwardNodes()) {
+			result.append(" ").append(this.id).append(" -> ").append(child.id).append(" ");
+		}
+		if (this.isRoot())
+			result.append(end);
+
+		return result.toString();
 	}
 }

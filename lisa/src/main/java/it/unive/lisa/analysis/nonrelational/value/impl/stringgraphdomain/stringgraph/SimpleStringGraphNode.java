@@ -30,15 +30,15 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
         throw new UnsupportedOperationException("Cannot remove child from " + this.getClass().getName());
     }
 
-    @Override
-	public String toString() {
-        return this.value;
-	}
-
 	@Override
     public List<String> getDenotation() {
         return List.of(this.value);
     }
+
+    /*
+    @Override
+    public String toString() { return this.getLabel(); }
+     */
 
     @Override
     public String getLabel() {

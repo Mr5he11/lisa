@@ -45,6 +45,7 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
         this.value -= 1;
     }
 
+    /*
     @Override
 	public String toString() {
 		return "Concat/" + value
@@ -55,6 +56,7 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
                 .map(StringGraphNode::getLabel)
                 .collect(Collectors.joining(", ", "", "] "));
 	}
+	*/
 
     @Override
     public String getLabel() {

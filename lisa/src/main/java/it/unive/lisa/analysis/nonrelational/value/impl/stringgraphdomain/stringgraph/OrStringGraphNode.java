@@ -3,7 +3,6 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -16,6 +15,7 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
         this.value = null;
     }
 
+    /*
     @Override
 	public String toString() {
         return "OR"
@@ -26,6 +26,7 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
                     .map(StringGraphNode::getLabel)
                     .collect(Collectors.joining(", ", "", "] "));
 	}
+	*/
 
 	@Override
     public List<String> getDenotation() {
