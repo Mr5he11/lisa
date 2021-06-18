@@ -3,6 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -240,19 +241,19 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	@Override
 	public String toString() {
-		return "digraph string_graph_node_" + this.id + " { " + this.toStringAux() + " }";
+		return "digraph string_graph_node_" + this.id + " { " + String.join("", this.toStringAux()) + " }";
 	}
 
-	public String toStringAux() {
-		StringBuilder result = new StringBuilder("");
-		result.append(this.id).append(" [label=\"").append(this.getLabel()).append("\"]").append(" ");
+	public Set<String> toStringAux() {
+		Set<String> result = new LinkedHashSet<>();
+		result.add(this.id + " [label=\"" + this.getLabel() + "\"] ");
 		for (StringGraphNode<?> child : this.getForwardNodes()) {
-			result.append(child.toStringAux());
-			result.append(this.id).append(" -> ").append(child.id).append(" ");
+			result.addAll(child.toStringAux());
+			result.add(this.id+ " -> " + child.id + " ");
 		}
 		for (StringGraphNode<?> child : this.getBackwardNodes()) {
-			result.append(this.id).append(" -> ").append(child.id).append(" ");
+			result.add(this.id + " -> " + child.id + " ");
 		}
-		return result.toString();
+		return result;
 	}
 }
