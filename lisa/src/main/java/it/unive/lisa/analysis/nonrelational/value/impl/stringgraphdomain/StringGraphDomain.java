@@ -71,15 +71,11 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 	@Override
 	protected StringGraphDomain lubAux(StringGraphDomain other) throws SemanticException {
 		// Section 4.4.3
-		if (!(this.root.getDenotation().equals(other.root.getDenotation()))) {
-			StringGraphNode<?> orNode = new OrStringGraphNode();
-			orNode.addForwardChild(this.root);
-			orNode.addForwardChild(other.root);
-			StringGraphNode<?> result = orNode.normalize();
-			return new StringGraphDomain(result);
-		} else {
-			return this;
-		}
+		StringGraphNode<?> orNode = new OrStringGraphNode();
+		orNode.addForwardChild(this.root);
+		orNode.addForwardChild(other.root);
+		StringGraphNode<?> result = orNode.normalize();
+		return new StringGraphDomain(result);
 	}
 
 	@Override
@@ -111,10 +107,18 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 					// (1) : prlb(vo) <> prlb(vn)
 					Set<String> oldPrlb = oldNode.getPrincipalLabels();
 					Set<String> newPrlb = newNode.getPrincipalLabels();
-
 					if (oldPrlb == null && newPrlb != null) { found = true; }
 					if (oldPrlb != null && newPrlb == null) { found = true; }
 					if (oldPrlb != null && !oldPrlb.equals(newPrlb)) { found = true; }
+
+					// (2) : depth(vo) < depth(vn)
+					Integer oldDistance = oldNode.getDistance(go.root);
+					Integer newDistance = newNode.getDistance(gn.root);
+					if (oldDistance != null && newDistance != null) {
+						if (oldDistance < newDistance) {
+							found = true;
+						}
+					}
 
 					if (found) { // stop inner loop
 						vo = oldNode;
@@ -156,7 +160,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			return top();
 		}
 		// If ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
-		// else replace va with a OR node with [va, vn] as children. Then re-apply widening.
+		// else replace [va] with a OR node with [va, vn] as children. Then re-apply widening.
 		if (vn.isLessOrEqual(va)) {
 			// introduce a cycle in the graph!
 			vn.addBackwardChild(va);
@@ -176,8 +180,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 			or.addForwardChild(va);
 			or.addForwardChild(vn);
 
-			return this.wideningAux(gn);
-			//return other.wideningAux(gn); // ???
+			return widening(gn);
 		}
 	}
 

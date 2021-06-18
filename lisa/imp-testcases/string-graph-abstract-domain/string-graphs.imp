@@ -1,5 +1,5 @@
 class sg {
-/*
+
     f_contains() {
         def x = "ciao";
         if (strcon(x,"c")) {
@@ -27,17 +27,16 @@ class sg {
             x = strcat(x,"a");
         }
     }
-*/
 
     f_prog_1() {
-        def query = "SELECT $ || (RETAIL/100) FROM" +" INVENTORY WHERE ";
+        def query = "SELECT *, (RETAIL/100) FROM" + " INVENTORY WHERE ";
         def y=0;
         if (y>0) {
-            query = strcat(query, "WHOLESALE > 1 AND ");
+            query = query + "WHOLESALE > 1 AND ";
         }
 
         def per = "SELECT TYPECODE, TYPEDESC FROM TYPES WHERE NAME = 'fish' OR NAME = 'meat'";
-        query = strcat(strcat(strcat(query, "TYPE IN ("), per), ");");
+        query = query + "TYPE IN (" + per + ");";
         return query;
     }
 }

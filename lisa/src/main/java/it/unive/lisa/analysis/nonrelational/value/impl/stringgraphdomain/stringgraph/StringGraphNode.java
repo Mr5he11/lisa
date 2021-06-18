@@ -252,6 +252,23 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return SGNUtils.partialOrderAux(this, other, new HashSet<>());
 	}
 
+	public Integer getDistance(StringGraphNode<?> ancestor) {
+		Integer depth = 0;
+		StringGraphNode<?> parent = getForwardParent();
+		while (parent != null) {
+			if (parent.equals(ancestor)) {
+				break;
+			}
+			parent = parent.getForwardParent();
+			depth++;
+		}
+
+		if (parent == null) {
+			return null;
+		}
+		return depth;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
