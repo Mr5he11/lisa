@@ -3,7 +3,6 @@ package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.string
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -504,7 +503,7 @@ public abstract class SGNUtils {
             StringGraphNode<?> node2,
             BiFunction<StringGraphNode<?>, StringGraphNode<?>, T> function
     ) {
-        T result = null;
+        T result;
 
         result = function.apply(node1, node2);
         if (result != null)
