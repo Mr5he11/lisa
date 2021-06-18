@@ -4,6 +4,7 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringg
 
 import java.io.*;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 
@@ -408,6 +409,43 @@ public abstract class SGNUtils {
             if (node.getOutDegree() == 1) {
                 return getSingleCharacterString(children.get(0));
             }
+        }
+
+        return null;
+    }
+
+    /** TODO */
+    public static String unquote(String value) {
+
+        if (value == null)
+            return "";
+
+        if (value.startsWith("\"")) {
+            value = value.substring(1);
+        }
+        if (value.endsWith("\"")) {
+            value = value.substring(0, value.length()-1);
+        }
+
+        return value;
+    }
+
+    public static <T> T checkConditionInGraphs(StringGraphNode<?> node1, StringGraphNode<?> node2, BiFunction<StringGraphNode<?>, StringGraphNode<?>, T> function) {
+        T result = null;
+
+        result = function.apply(node1, node2);
+        if (result != null)
+            return result;
+
+        for(StringGraphNode<?> child : node1.getForwardNodes()) {
+            result = checkConditionInGraphs(child, node2, function);
+            if (result != null)
+                return result;
+        }
+        for(StringGraphNode<?> child : node2.getForwardNodes()) {
+            result = checkConditionInGraphs(node1, child, function);
+            if (result != null)
+                return result;
         }
 
         return null;

@@ -31,7 +31,7 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     public List<String> getDenotation() {
         List<String> result = new ArrayList<>();
 
-        for (StringGraphNode<?> n : getChildren()) {
+        for (StringGraphNode<?> n : getForwardNodes()) {
             for (String str : n.getDenotation()) {
                 if (
                     (result.size() == 1 && ConstValues.ALL_STRINGS.name().compareTo(result.get(0)) == 0)

@@ -1,5 +1,5 @@
 class sg {
-
+/*
     f_contains() {
         def x = "ciao";
         if (strcon(x,"c")) {
@@ -13,14 +13,15 @@ class sg {
             x = strcat(x,"a");
         }
     }
-
+*/
     f_loop() {
-        def x = "ciao";
+        def x = "c";
         while (strcon(x,"c")) {
             x = strcat(x,"a");
         }
+        x = strcat(x,"b");
     }
-
+/*
     f_not_loop() {
         def x = "ciao";
         while (strcon(x,"u")) {
@@ -39,4 +40,5 @@ class sg {
         query = query + "TYPE IN (" + per + ");";
         return query;
     }
+   */
 }

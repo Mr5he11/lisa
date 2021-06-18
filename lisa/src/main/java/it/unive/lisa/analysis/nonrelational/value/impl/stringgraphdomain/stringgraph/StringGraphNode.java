@@ -41,7 +41,9 @@ public abstract class StringGraphNode<V> implements Serializable {
     public static StringGraphNode<?> create(String value) {
 		StringGraphNode<?> result;
 
-		if (value == null) {
+		value = SGNUtils.unquote(value);
+
+		if (value.length() == 0) {
 			// EMPTY node if no value
 			result = new ConstStringGraphNode(ConstValues.EMPTY);
 		} else if (value.length() == 1) {
@@ -269,16 +271,18 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return depth;
 	}
 
+	/* Since each node can have at most one forward parent, a node can be uniquely identified by its value and its children */
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (!(o instanceof StringGraphNode)) return false;
 		StringGraphNode<?> that = (StringGraphNode<?>) o;
-		return Objects.equals(value, that.value) && Objects.equals(forwardParent, that.forwardParent) && Objects.equals(backwardParents, that.backwardParents);
+		return Objects.equals(value, that.value) && Objects.equals(forwardNodes, that.forwardNodes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(value);
+		return Objects.hash(value, forwardNodes);
 	}
 }

@@ -9,9 +9,7 @@ import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 	private final StringGraphNode<?> root;
@@ -90,53 +88,34 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
 		// Topological clash between vo and vn:
 		// 	(1): [vo]: OR node in gOld and [vn]: OR node in gNew where prlb(vo) <> prlb(vn)
-		// 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn) :: TODO NIY
+		// 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn)
 
-		StringGraphNode<?> vo = null;
-		StringGraphNode<?> vn = null;
+		StringGraphNode<?> vn = SGNUtils.<StringGraphNode<?>>checkConditionInGraphs(go.root, gn.root, (oldNode, newNode) -> {
+			StringGraphNode<?> returnValue = null;
+			if (oldNode instanceof OrStringGraphNode && newNode instanceof OrStringGraphNode) {
+				// (1) : prlb(vo) <> prlb(vn)
+				Set<String> oldPrlb = oldNode.getPrincipalLabels();
+				Set<String> newPrlb = newNode.getPrincipalLabels();
+				if ((oldPrlb == null && newPrlb != null) || (oldPrlb != null && newPrlb == null) || (oldPrlb != null && !oldPrlb.equals(newPrlb)))
+					returnValue = newNode;
 
-		List<StringGraphNode<?>> oldNodes = go.root.getForwardNodes();
-		List<StringGraphNode<?>> newNodes = gn.root.getForwardNodes();
 
-		// TODO use streams?
-		boolean found = false;
-		for(StringGraphNode<?> oldNode: oldNodes) {
-			for(StringGraphNode<?> newNode: newNodes) {
-
-				if (oldNode instanceof OrStringGraphNode && newNode instanceof OrStringGraphNode) {
-					// (1) : prlb(vo) <> prlb(vn)
-					Set<String> oldPrlb = oldNode.getPrincipalLabels();
-					Set<String> newPrlb = newNode.getPrincipalLabels();
-					if (oldPrlb == null && newPrlb != null) { found = true; }
-					if (oldPrlb != null && newPrlb == null) { found = true; }
-					if (oldPrlb != null && !oldPrlb.equals(newPrlb)) { found = true; }
-
-					// (2) : depth(vo) < depth(vn)
-					Integer oldDistance = oldNode.getDistance(go.root);
-					Integer newDistance = newNode.getDistance(gn.root);
-					if (oldDistance != null && newDistance != null) {
-						if (oldDistance < newDistance) {
-							found = true;
-						}
-					}
-
-					if (found) { // stop inner loop
-						vo = oldNode;
-						vn = newNode;
-						break;
+				// (2) : depth(vo) < depth(vn)
+				Integer oldDistance = oldNode.getDistance(go.root);
+				Integer newDistance = newNode.getDistance(gn.root);
+				if (oldDistance != null && newDistance != null) {
+					if (oldDistance < newDistance) {
+						returnValue = newNode;
 					}
 				}
 			}
-
-			if (found) { // stop outer loop
-				break;
-			}
-		}
+			return returnValue;
+		});
 
 
 		// If one of the previous is true, then search for an ancestor [va] of [vn] such that prlb(vn) is INCLUDED in prlb(va)
 		// else do nothing
-		if (!found) {
+		if (vn == null) {
 			return top();
 		}
 

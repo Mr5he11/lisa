@@ -16,13 +16,6 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     public ConcatStringGraphNode(String value) {
         this();
 
-        if (value.startsWith("\"")) {
-            value = value.substring(1);
-        }
-        if (value.endsWith("\"")) {
-            value = value.substring(0, value.length()-1);
-        }
-
         for (String s: value.split("")) {
             addForwardChild( new SimpleStringGraphNode(s) );
         }
