@@ -266,7 +266,7 @@ public abstract class SGNUtils {
      * The cases implemented in this function are the following:
      * <ul>
      *     <li><strong>Case 1:</strong> if the edge that links the two roots is already in the set, return true</li>
-     *     <li><strong>Case 2:</strong> if the label of the right root is NAX, return true</li>
+     *     <li><strong>Case 2:</strong> if the label of the right root is MAX, return true</li>
      *     <li><strong>Case 3:</strong> if the two roots are concat node, with same length k, check for each child if the property holds,
      *     		while adding to the current set of edges a new edge formed by the current nodes n and m.</li>
      *     <li><strong>Case 4:</strong> if the two roots are OR node, take all the children of the left node n and check if the property holds for each of them,
@@ -505,11 +505,6 @@ public abstract class SGNUtils {
     ) {
         T result;
 
-        result = function.apply(node1, node2);
-        if (result != null)
-            return result;
-
-
         for(StringGraphNode<?> child : node1.getForwardNodes()) {
             result = checkConditionInGraphs(child, node2, function);
             if (result != null)
@@ -522,6 +517,6 @@ public abstract class SGNUtils {
                 return result;
         }
 
-        return null;
+        return function.apply(node1, node2);
     }
 }

@@ -81,7 +81,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		// 4.4.4
 		StringGraphDomain go = this;
 		StringGraphNode<?> orNode = new OrStringGraphNode();
-		orNode.addForwardChild(this.root);
+		orNode.addForwardChild(go.root);
 		orNode.addForwardChild(other.root);
 		StringGraphNode<?> result = SGNUtils.compact(orNode);
 		StringGraphDomain gn = new StringGraphDomain(result);
@@ -98,7 +98,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 				Set<String> newPrlb = newNode.getPrincipalLabels();
 				if ((oldPrlb == null && newPrlb != null) || (oldPrlb != null && newPrlb == null) || (oldPrlb != null && !oldPrlb.equals(newPrlb)))
 					returnValue = newNode;
-
 
 				// (2) : depth(vo) < depth(vn)
 				Integer oldDistance = oldNode.getDistance(go.root);
@@ -130,7 +129,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 					// found ancestor!
 					va = parent;
 				}
-
 				parent = parent.getForwardParent();
 			}
 		}
@@ -143,14 +141,17 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		if (vn.isLessOrEqual(va)) {
 			// introduce a cycle in the graph!
 			vn.addBackwardChild(va);
-			return gn;
+			StringGraphNode<?> normalized = SGNUtils.compact(result);
+			return new StringGraphDomain(normalized);
 		} else {
 			OrStringGraphNode or = new OrStringGraphNode();
 
 			// remove va from parent and add or as child
 			StringGraphNode<?> vaOriginalParent = va.getForwardParent();
-			vaOriginalParent.removeChild(va);
-			vaOriginalParent.addForwardChild(or);
+			if (vaOriginalParent != null) {
+				vaOriginalParent.removeChild(va);
+				vaOriginalParent.addForwardChild(or);
+			}
 
 			// remove vn from parent (since now vn is child of or)
 			vn.getForwardParent().removeChild(vn);
