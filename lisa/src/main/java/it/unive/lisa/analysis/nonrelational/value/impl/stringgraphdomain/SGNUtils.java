@@ -7,6 +7,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
@@ -538,22 +539,23 @@ public abstract class SGNUtils {
     }
 
 
-    public static StringGraphNode<?> normalize(StringGraphNode<?> n) {
+    public static StringGraphNode<?> normalize(StringGraphNode<?> node) {
         try {
             /* INITIALIZATION */
             HashMap<String, Set<StringGraphNode<?>>> idToNfr = new HashMap<>();
             HashMap<String, Set<StringGraphNode<?>>> idToNd = new HashMap<>();
-            StringGraphNode<?> m0 = n.getClass().getDeclaredConstructor().newInstance();
+            StringGraphNode m0 = node.getClass().getDeclaredConstructor().newInstance();
+            m0.setValue(node.getValue());
             Set<StringGraphNode<?>> S_ul = new HashSet<>();
             Set<StringGraphNode<?>> S_sn = new HashSet<>();
             S_ul.add(m0);
 
             if (m0 instanceof  OrStringGraphNode)
-                idToNfr.put(m0.id, new HashSet<>(n.getChildren()));
+                idToNfr.put(m0.id, new HashSet<>(node.getChildren()));
             else
                 idToNfr.put(m0.id, new HashSet<>());
             idToNd.put(m0.id, new HashSet<>(idToNfr.get(m0.id)));
-            idToNd.get(m0.id).add(n);
+            idToNd.get(m0.id).add(node);
 
             /* REPEAT UNTIL */
             do {
@@ -570,15 +572,83 @@ public abstract class SGNUtils {
                     S_sn.add(m);
                 } else if (m instanceof OrStringGraphNode) {
                     // CASE 3
-
+                    Optional<StringGraphNode<?>> nOpt = idToNfr.get(m.id).stream().filter(_n -> involvedOverlap(m,_n, idToNfr)).findFirst();
+                    while(nOpt.isPresent()) {
+                        StringGraphNode<?> n = nOpt.get();
+                        idToNfr.get(m.id).remove(n);
+                        idToNfr.get(m.id).addAll(n.getChildren().stream().filter(k -> !idToNd.get(m.id).contains(k)).collect(Collectors.toSet()));
+                        idToNd.get(m.id).addAll(n.getChildren());
+                    }
+                    mgOpt = S_sn.stream().filter(_mg -> safeAnc(m, idToNd, _mg)).findFirst();
+                    if (mgOpt.isPresent()) {
+                        ulBarc(m, mgOpt.get(), S_ul);
+                    } else {
+                        for (StringGraphNode<?> n : idToNfr.get(m.id).stream().filter(_n -> _n instanceof  OrStringGraphNode).collect(Collectors.toList())) {
+                            StringGraphNode<?> newChild = new OrStringGraphNode();
+                            m.addForwardChild(newChild);
+                            idToNfr.put(newChild.id, new HashSet<>(n.getChildren()));
+                            idToNd.put(newChild.id, new HashSet<>(n.getChildren()));
+                            idToNd.get(newChild.id).add(n);
+                            S_ul.add(newChild);
+                        }
+                        Set<String> labels = idToNfr
+                                .get(m.id)
+                                .stream()
+                                .filter(_n -> _n instanceof ConcatStringGraphNode || _n instanceof SimpleStringGraphNode)
+                                .map(StringGraphNode::getLabel)
+                                .collect(Collectors.toSet());
+                        for (String l : labels) {
+                            Set<StringGraphNode<?>> sameLabel = idToNfr.get(m.id).stream().filter(_n -> _n.getLabel().equals(l)).collect(Collectors.toSet());
+                            StringGraphNode newChild = sameLabel.iterator().next().getClass().getDeclaredConstructor().newInstance();
+                            newChild.setValue(sameLabel.iterator().next().getValue());
+                            m.addForwardChild(newChild);
+                            idToNd.put(newChild.id, sameLabel);
+                            idToNfr.put(newChild.id, new HashSet<>());
+                            S_ul.add(newChild);
+                        }
+                        S_ul.remove(m);
+                        S_sn.add(m);
+                    }
                 } else {
                     // CASE 4
-
+                    if (idToNd.get(m.id).size() == 1) {
+                        StringGraphNode<?> n = idToNd.get(m.id).iterator().next();
+                        for (StringGraphNode<?> child : n.getForwardNodes()) {
+                            StringGraphNode newChild = child.getClass().getDeclaredConstructor().newInstance();
+                            newChild.setValue(child.getValue());
+                            m.addForwardChild(newChild);
+                            if (newChild instanceof OrStringGraphNode) {
+                                idToNfr.put(newChild.id, new HashSet<>(child.getForwardNodes()));
+                            } else {
+                                idToNfr.put(newChild.id, new HashSet<>());
+                            }
+                            idToNd.put(newChild.id,  idToNfr.get(newChild.id));
+                            idToNd.get(newChild.id).add(child);
+                        }
+                    } else {
+                        int i = 0;
+                        while(i < (Integer)m.getValue()) {
+                            int finalI = i;
+                            Set<StringGraphNode<?>> iThChildren = idToNd.get(m.id).stream().map(_n -> _n.getChildren().get(finalI)).collect(Collectors.toSet());
+                            if (iThChildren.stream().anyMatch(_i -> _i instanceof ConstStringGraphNode && _i.getValue().equals(ConstValues.MAX))) {
+                                StringGraphNode<?> newChild = new ConstStringGraphNode(ConstValues.MAX);
+                                idToNd.put(newChild.id, iThChildren);
+                            } else {
+                                StringGraphNode<?> newChild = new OrStringGraphNode();
+                                idToNfr.put(newChild.id, iThChildren);
+                                idToNd.put(newChild.id, iThChildren);
+                            }
+                            i++;
+                        }
+                    }
+                    S_ul.remove(m);
+                    S_ul.addAll(m.getForwardNodes());
+                    S_sn.add(m);
                 }
 
             } while(S_ul.size() == 0);
 
-            return null;
+            return compact(m0);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             return null;
         }
@@ -589,6 +659,14 @@ public abstract class SGNUtils {
         mgToMPath.remove(0);
         mgToMPath.add(mg);
         return mg.isProperAncestor(m) && fn.get(mg.id) == fn.get(m.id) && mgToMPath.stream().anyMatch(mf -> !(mf instanceof OrStringGraphNode));
+    }
+
+    private static boolean involvedOverlap(StringGraphNode<?> m, StringGraphNode<?> n, HashMap<String, Set<StringGraphNode<?>>> nfr) {
+        Set<String> nPrincipalLabels = n.getPrincipalLabels();
+        Set<String> otherPrincipalLabels = nfr.get(m.id).stream().filter(k -> !k.equals(n)).flatMap(k -> k.getPrincipalLabels().stream()).collect(Collectors.toSet());
+        Set<String> intersection = new HashSet<>(nPrincipalLabels);
+        intersection.retainAll(otherPrincipalLabels);
+        return nfr.get(m.id).contains(n) && n instanceof OrStringGraphNode && !(intersection.isEmpty());
     }
 
     private static void ulBarc(StringGraphNode<?> m, StringGraphNode<?> mg, Set<StringGraphNode<?>> S_ul) {
