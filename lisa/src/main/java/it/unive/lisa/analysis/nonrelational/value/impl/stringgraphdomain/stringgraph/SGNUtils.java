@@ -504,13 +504,13 @@ public abstract class SGNUtils {
             BiFunction<StringGraphNode<?>, StringGraphNode<?>, T> function
     ) {
         T result;
-
+/*
         for(StringGraphNode<?> child : node1.getForwardNodes()) {
             result = checkConditionInGraphs(child, node2, function);
             if (result != null)
                 return result;
         }
-
+*/
         for(StringGraphNode<?> child : node2.getForwardNodes()) {
             result = checkConditionInGraphs(node1, child, function);
             if (result != null)

@@ -19,6 +19,8 @@ public abstract class StringGraphNode<V> implements Serializable {
 	protected final List<StringGraphNode<?>> backwardNodes;
 	protected final List<StringGraphNode<?>> backwardParents;
 	private static int counter = 0;
+
+	private Set<StringGraphNode<?>> is;
 	
 	public StringGraphNode() {
 		this.forwardNodes = new ArrayList<>();
@@ -27,6 +29,8 @@ public abstract class StringGraphNode<V> implements Serializable {
 		this.forwardParent = null;
 		this.id = "id_" + StringGraphNode.counter;
 		StringGraphNode.counter += 1;
+
+		this.is = new HashSet<>();
 	}
 	
 	/**
@@ -223,6 +227,16 @@ public abstract class StringGraphNode<V> implements Serializable {
 			return null;
 		}
 		return depth;
+	}
+
+	public Set<StringGraphNode<?>> is() {
+		return this.is;
+	}
+
+	public Set<StringGraphNode<?>> ris() {
+		return this.is != null ?
+				this.is.stream().filter(n -> ConstValues.MAX != n.getValue()).collect(Collectors.toSet())
+				: new HashSet<>();
 	}
 
 	/* Since each node can have at most one forward parent, a node can be uniquely identified by its value and its children */
