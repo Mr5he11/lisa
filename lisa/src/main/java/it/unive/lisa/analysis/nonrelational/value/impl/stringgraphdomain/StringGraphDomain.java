@@ -223,27 +223,28 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
         // Topological clash between vo and vn:
         // 	(1): [vo]: OR node in gOld and [vn]: OR node in gNew where prlb(vo) <> prlb(vn)
-        // 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn)
+        // 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn
 
-        StringGraphNode<?> vn = SGNUtils.<StringGraphNode<?>>checkConditionInGraphs(go.root, gn.root, (oldNode, newNode) -> {
-            StringGraphNode<?> returnValue = null;
+        
+        StringGraphNode<?> vn =  SGNUtils.<StringGraphNode<?>>checkConditionInGraphs(go.root, gn.root, (oldNode, newNode) -> {
             if (oldNode instanceof OrStringGraphNode && newNode instanceof OrStringGraphNode) {
                 // (1) : prlb(vo) <> prlb(vn)
                 Set<String> oldPrlb = oldNode.getPrincipalLabels();
                 Set<String> newPrlb = newNode.getPrincipalLabels();
-                if ((oldPrlb == null && newPrlb != null) || (oldPrlb != null && newPrlb == null) || (oldPrlb != null && !oldPrlb.equals(newPrlb)))
-                    returnValue = newNode;
+                if ((oldPrlb == null && newPrlb != null) || (oldPrlb != null && !oldPrlb.equals(newPrlb))){
+                    return newNode;
+                }
 
                 // (2) : depth(vo) < depth(vn)
                 Integer oldDistance = oldNode.getDistance(go.root);
                 Integer newDistance = newNode.getDistance(gn.root);
                 if (oldDistance != null && newDistance != null) {
                     if (oldDistance < newDistance) {
-                        returnValue = newNode;
+                       return newNode;
                     }
                 }
             }
-            return returnValue;
+            return null;
         });
 
 
@@ -258,11 +259,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
         if (nPrlb != null) {
             StringGraphNode<?> parent = vn.getForwardParent();
-            while (va == null && parent != null) {
+            while (parent != null) {
                 Set<String> parentPrlb = parent.getPrincipalLabels();
                 if (parentPrlb != null && parentPrlb.containsAll(nPrlb)) {
                     // found ancestor!
                     va = parent;
+                    break;
                 }
                 parent = parent.getForwardParent();
             }
@@ -308,8 +310,8 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
             or.addForwardChild(va);
             or.addForwardChild(vn);
 
-            StringGraphNode<?> normalized = SGNUtils.compact(or);
-            return widening(new StringGraphDomain(normalized));
+            StringGraphNode<?> root_normalized = SGNUtils.compact(gn.root);
+            return widening(new StringGraphDomain(root_normalized));
         }
     }
 

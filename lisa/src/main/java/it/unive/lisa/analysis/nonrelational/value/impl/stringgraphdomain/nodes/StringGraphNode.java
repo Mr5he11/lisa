@@ -100,18 +100,21 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	public <C extends StringGraphNode<?>> void addForwardChild(C child) {
+    	if (!child.isRoot()) { child.getForwardParent().getForwardNodes().remove(child); }
 		child.setForwardParent(this);
     	this.forwardNodes.add(child);
     }
 
 	public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
+		if (!child.isRoot()) { child.getForwardParent().getForwardNodes().remove(child);}
 		child.setForwardParent(this);
 		this.forwardNodes.add(index, child);
 	}
 
 	public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
-    	this.backwardNodes.add(child);
-    	child.addBackwardParent(this);
+		child.getBackwardParents().forEach( p -> p.getBackwardNodes().remove(child));
+		child.addBackwardParent(this);
+		this.backwardNodes.add(child);
 	}
 
 	protected <P extends StringGraphNode<?>> void setForwardParent(P forwardParent) {
@@ -123,9 +126,9 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	public <C extends StringGraphNode<?>> void removeChild(C child) {
-    	if (this.forwardNodes.remove(child) || this.backwardNodes.remove(child)) {
-    		child.removeParent(this);
-		}
+    	this.forwardNodes.remove(child);
+		this.backwardNodes.remove(child);
+    	child.removeParent(this);
     }
 
     public <P extends StringGraphNode<?>> void removeParent(P parent) {
@@ -261,7 +264,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	public Set<String> toStringAux() {
 		Set<String> result = new LinkedHashSet<>();
-		result.add(this.id + " [label=\"" + this.getLabel() + "\"] ");
+		result.add(this.id + " [label=\"" + this.id + "\"] "); // TODO getLabel()
 		for (StringGraphNode<?> child : this.getForwardNodes()) {
 			result.addAll(child.toStringAux());
 			result.add(this.id+ " -> " + child.id + " ");
