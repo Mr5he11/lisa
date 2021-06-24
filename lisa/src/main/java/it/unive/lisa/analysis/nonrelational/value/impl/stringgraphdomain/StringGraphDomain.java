@@ -115,7 +115,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		// If one of the previous is true, then search for an ancestor [va] of [vn] such that prlb(vn) is INCLUDED in prlb(va)
 		// else do nothing
 		if (vn == null) {
-			return top();
+			return gn;
 		}
 
 		StringGraphNode<?> va = null;
@@ -134,13 +134,15 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 		}
 
 		if (va == null) {
-			return top();
+			return gn;
 		}
 		// If ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
 		// else replace [va] with a OR node with [va, vn] as children. Then re-apply widening.
 		if (vn.isLessOrEqual(va)) {
 			// introduce a cycle in the graph!
-			vn.addBackwardChild(va);
+			StringGraphNode<?> vnParent = vn.getForwardParent();
+			vnParent.addBackwardChild(va);
+			vnParent.removeChild(vn);
 			StringGraphNode<?> normalized = SGNUtils.compact(result);
 			return new StringGraphDomain(normalized);
 		} else {

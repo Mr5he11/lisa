@@ -96,13 +96,13 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	public <C extends StringGraphNode<?>> void addForwardChild(C child) {
+		child.setForwardParent(this);
     	this.forwardNodes.add(child);
-        child.setForwardParent(this);
     }
 
 	public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
-		this.forwardNodes.add(index, child);
 		child.setForwardParent(this);
+		this.forwardNodes.add(index, child);
 	}
 
 	public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
@@ -111,7 +111,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	protected <P extends StringGraphNode<?>> void setForwardParent(P forwardParent) {
-		this.forwardParent = forwardParent;
+    	this.forwardParent = forwardParent;
 	}
 
 	protected <P extends StringGraphNode<?>> void addBackwardParent(P parent) {
@@ -242,6 +242,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 	@Override
 	public String toString() {
 		return "digraph string_graph_node_" + this.id + " { " + String.join("", this.toStringAux()) + " }";
+		//return getLabel();
 	}
 
 	public Set<String> toStringAux() {
@@ -252,7 +253,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 			result.add(this.id+ " -> " + child.id + " ");
 		}
 		for (StringGraphNode<?> child : this.getBackwardNodes()) {
-			result.add(this.id + " -> " + child.id + " ");
+			result.add(this.id + " -> " + child.id + " [style=dashed] ");
 		}
 		return result;
 	}

@@ -1,5 +1,5 @@
 class sg {
-
+    /*
     f_contains() {
         def x = "ciao";
         if (strcon(x,"c")) {
@@ -12,7 +12,7 @@ class sg {
         if (strcon(x,"u")) {
             x = strcat(x,"a");
         }
-    }
+    } */
 
     f_loop() {
         def x = "ciao";
@@ -21,7 +21,7 @@ class sg {
         }
         x = strcat(x,"b");
     }
-
+    /*
     f_not_loop() {
         def x = "ciao";
         while (strcon(x,"u")) {
@@ -29,16 +29,35 @@ class sg {
         }
     }
 
+
     f_prog_1() {
-        def query = "SELECT *, (RETAIL/100) FROM" + " INVENTORY WHERE ";
-        def y=0;
-        if (y>0) {
-            query = query + "WHOLESALE > 1 AND ";
+        def y = 0;
+        def query = strcat("SELECT *, (RETAIL/100) FROM"," INVENTORY WHERE ");
+        if (y > 0) {
+            query = strcat(query, "WHOLESALE > 1 AND ");
         }
 
-        def per = "SELECT TYPECODE, TYPEDESC FROM TYPES WHERE NAME = 'fish' OR NAME = 'meat'";
-        query = query + "TYPE IN (" + per + ");";
+        def per = "SELECT TYPECODE, TYPEDESC FROM TYPES WHERE NAME = fish OR NAME = meat";
+        query = strcat(query,"TYPE IN (");
+        query = strcat(query, per);
+        query = strcat(query, ");");
         return query;
     }
+
+    f_prog_2() {
+        def y = 0;
+        def query = strcat("1a","2b");
+        if (y > 0) {
+            query = strcat(query, "3c");
+        }
+
+        def per = "4d";
+        query = strcat(query,"5e");
+        query = strcat(query, per);
+        query = strcat(query, "6f");
+        return query;
+    }
+
+    */
 
 }
