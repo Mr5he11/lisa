@@ -279,9 +279,10 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         if (vn.isLessOrEqual(va)) {
             // introduce a cycle in the graph!
             StringGraphNode<?> vnParent = vn.getForwardParent();
-            vnParent.addBackwardChild(va);
             vnParent.removeChild(vn);
-            StringGraphNode<?> normalized = SGNUtils.compact(result);
+            vnParent.addBackwardChild(va);
+
+            StringGraphNode<?> normalized = SGNUtils.compact(gn.root);
             return new StringGraphDomain(normalized);
         } else {
             OrStringGraphNode or = new OrStringGraphNode();

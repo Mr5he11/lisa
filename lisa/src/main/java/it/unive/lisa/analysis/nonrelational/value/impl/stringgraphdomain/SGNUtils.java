@@ -4,6 +4,7 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.*
 import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.ConstStringGraphNode.ConstValues;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -534,5 +535,66 @@ public abstract class SGNUtils {
         original.getForwardParent().removeChild(original);
         original.getBackwardParents().forEach(parent -> parent.addBackwardChild(replacement));
 
+    }
+
+
+    public static StringGraphNode<?> normalize(StringGraphNode<?> n) {
+        try {
+            /* INITIALIZATION */
+            HashMap<String, Set<StringGraphNode<?>>> idToNfr = new HashMap<>();
+            HashMap<String, Set<StringGraphNode<?>>> idToNd = new HashMap<>();
+            StringGraphNode<?> m0 = n.getClass().getDeclaredConstructor().newInstance();
+            Set<StringGraphNode<?>> S_ul = new HashSet<>();
+            Set<StringGraphNode<?>> S_sn = new HashSet<>();
+            S_ul.add(m0);
+
+            if (m0 instanceof  OrStringGraphNode)
+                idToNfr.put(m0.id, new HashSet<>(n.getChildren()));
+            else
+                idToNfr.put(m0.id, new HashSet<>());
+            idToNd.put(m0.id, new HashSet<>(idToNfr.get(m0.id)));
+            idToNd.get(m0.id).add(n);
+
+            /* REPEAT UNTIL */
+            do {
+                StringGraphNode<?> m = S_ul.iterator().next();
+
+                Optional<StringGraphNode<?>> mgOpt = S_sn.stream().filter(_mg -> safeAnc(m, idToNd, _mg)).findFirst();
+                if (mgOpt.isPresent()) {
+                    // CASE 1
+                    StringGraphNode<?> mg = mgOpt.get();
+                    ulBarc(m, mg, S_ul);
+                } else if (m instanceof SimpleStringGraphNode || (m instanceof ConcatStringGraphNode && ((ConcatStringGraphNode)m).getValue() == 0)) {
+                    // CASE 2
+                    S_ul.remove(m);
+                    S_sn.add(m);
+                } else if (m instanceof OrStringGraphNode) {
+                    // CASE 3
+
+                } else {
+                    // CASE 4
+
+                }
+
+            } while(S_ul.size() == 0);
+
+            return null;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    private static boolean safeAnc(StringGraphNode<?> m, HashMap<String, Set<StringGraphNode<?>>> fn, StringGraphNode<?> mg) {
+        List<StringGraphNode<?>> mgToMPath = getForwardPath(mg,m);
+        mgToMPath.remove(0);
+        mgToMPath.add(mg);
+        return mg.isProperAncestor(m) && fn.get(mg.id) == fn.get(m.id) && mgToMPath.stream().anyMatch(mf -> !(mf instanceof OrStringGraphNode));
+    }
+
+    private static void ulBarc(StringGraphNode<?> m, StringGraphNode<?> mg, Set<StringGraphNode<?>> S_ul) {
+        S_ul.remove(m);
+        StringGraphNode<?> mParent = m.getForwardParent();
+        mParent.removeChild(m);
+        mParent.addBackwardChild(mg);
     }
 }

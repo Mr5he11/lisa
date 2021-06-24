@@ -102,7 +102,8 @@ public abstract class StringGraphNode<V> implements Serializable {
 	public <C extends StringGraphNode<?>> void addForwardChild(C child) {
     	if (!child.isRoot()) { child.getForwardParent().getForwardNodes().remove(child); }
 		child.setForwardParent(this);
-    	this.forwardNodes.add(child);
+    	if (!this.forwardNodes.contains(child))
+    		this.forwardNodes.add(child);
     }
 
 	public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
@@ -115,6 +116,8 @@ public abstract class StringGraphNode<V> implements Serializable {
 		child.getBackwardParents().forEach( p -> p.getBackwardNodes().remove(child));
 		child.addBackwardParent(this);
 		this.backwardNodes.add(child);
+		if (!this.backwardNodes.contains(child))
+			this.backwardNodes.add(child);
 	}
 
 	protected <P extends StringGraphNode<?>> void setForwardParent(P forwardParent) {
@@ -242,6 +245,14 @@ public abstract class StringGraphNode<V> implements Serializable {
 				: new HashSet<>();
 	}
 
+	public boolean isAncestor(StringGraphNode<?> descendant) {
+		return isProperAncestor(descendant) || this.equals(descendant);
+	}
+
+	public boolean isProperAncestor(StringGraphNode<?> descendant) {
+		return SGNUtils.getForwardPath(this, descendant).size() > 0;
+	}
+
 	/* Since each node can have at most one forward parent, a node can be uniquely identified by its value and its children */
 	@Override
 	public boolean equals(Object o) {
@@ -264,13 +275,13 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	public Set<String> toStringAux() {
 		Set<String> result = new LinkedHashSet<>();
-		result.add(this.id + " [label=\"" + this.id + "\"] "); // TODO getLabel()
+		result.add(this.id + " [label=\"" + this.id + "\"]\n"); // TODO getLabel()
 		for (StringGraphNode<?> child : this.getForwardNodes()) {
 			result.addAll(child.toStringAux());
-			result.add(this.id+ " -> " + child.id + " ");
+			result.add(this.id+ " -> " + child.id + "\n");
 		}
 		for (StringGraphNode<?> child : this.getBackwardNodes()) {
-			result.add(this.id + " -> " + child.id + " [style=dashed] ");
+			result.add(this.id + " -> " + child.id + " [style=dashed]\n");
 		}
 		return result;
 	}
