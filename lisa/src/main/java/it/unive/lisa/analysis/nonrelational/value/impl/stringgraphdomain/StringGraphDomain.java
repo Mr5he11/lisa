@@ -273,6 +273,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         if (va == null) {
             return gn;
         }
+
         // If ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
         // else replace [va] with a OR node with [va, vn] as children. Then re-apply widening.
         if (vn.isLessOrEqual(va)) {

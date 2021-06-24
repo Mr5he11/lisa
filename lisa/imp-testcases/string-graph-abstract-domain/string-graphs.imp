@@ -13,7 +13,7 @@ class sg {
             x = strcat(x,"a");
         }
     }
-
+*/
     f_loop() {
         def x = "ciao";
         while (strcon(x,"c")) {
@@ -21,14 +21,13 @@ class sg {
         }
         x = strcat(x,"b");
     }
-*/
+/*
     f_not_loop() {
         def x = "ciao";
         while (strcon(x,"u")) {
             x = strcat(x,"a");
         }
     }
-/*
 
     f_prog_1() {
         def y = 0;
@@ -59,5 +58,4 @@ class sg {
     }
 
     */
-
 }
