@@ -519,4 +519,19 @@ public abstract class SGNUtils {
 
         return function.apply(node1, node2);
     }
+
+    /**
+     * Replaces a StrigGraphNode with another instance of StringGraphNode
+     *
+     * @param original the node to be replaced
+     * @param replacement the node that should take the place of original
+     */
+    public static void replace(StringGraphNode<?> original, StringGraphNode<?> replacement) {
+        original.getForwardNodes().forEach(replacement::addForwardChild);
+        original.getBackwardNodes().forEach(replacement::addBackwardChild);
+        original.getForwardParent().addForwardChild(replacement);
+        original.getForwardParent().removeChild(original);
+        original.getBackwardParents().forEach(parent -> parent.addBackwardChild(replacement));
+
+    }
 }
