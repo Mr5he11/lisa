@@ -1,6 +1,7 @@
-package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
+package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain;
 
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.*;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.ConstStringGraphNode.ConstValues;
 
 import java.io.*;
 import java.util.*;
@@ -76,7 +77,7 @@ public abstract class SGNUtils {
             return new ConstStringGraphNode(ConstValues.MIN);
 
         // Rule 5
-        if (node instanceof OrStringGraphNode && node.getForwardNodes().stream().anyMatch(c -> c.value == ConstValues.MAX)) {
+        if (node instanceof OrStringGraphNode && node.getForwardNodes().stream().anyMatch(c -> c.getValue() == ConstValues.MAX)) {
             removeProperDescendants(node);
             return new ConstStringGraphNode(ConstValues.MAX);
         }
@@ -119,7 +120,7 @@ public abstract class SGNUtils {
         if (node instanceof OrStringGraphNode) {
             // Rule 2
             List<StringGraphNode<?>> toBeRemoved = node.getForwardNodes().stream()
-                    .filter(c -> c.value == ConstValues.MIN)
+                    .filter(c -> c.getValue() == ConstValues.MIN)
                     .collect(Collectors.toList());
             for (StringGraphNode<?> child : toBeRemoved)
                 node.removeChild(child);

@@ -1,4 +1,4 @@
-package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
+package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes;
 
 import java.util.ArrayList;
 import java.util.List;

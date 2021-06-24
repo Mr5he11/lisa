@@ -1,6 +1,6 @@
-package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
+package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes;
 
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.ConstStringGraphNode.ConstValues;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,9 +1,9 @@
-package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph;
+package it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes;
 
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.SGNUtils;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.ConstStringGraphNode.ConstValues;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

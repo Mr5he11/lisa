@@ -1,7 +1,8 @@
 package it.unive.lisa.nonrelational.impl;
 
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.*;
-import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.stringgraph.ConstStringGraphNode.ConstValues;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.SGNUtils;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.*;
+import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.ConstStringGraphNode.ConstValues;
 import org.junit.Test;
 
 import java.util.List;
