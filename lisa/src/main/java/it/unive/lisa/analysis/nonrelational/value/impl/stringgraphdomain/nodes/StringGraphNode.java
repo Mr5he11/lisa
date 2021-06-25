@@ -235,6 +235,34 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return depth;
 	}
 
+	public int getDepth() {
+		StringGraphNode<?> n = this;
+		int depth = 0;
+		while(!n.isRoot()) {
+			depth += 1;
+			n = n.getForwardParent();
+		}
+		return depth;
+	}
+
+	public StringGraphNode<?> getRoot() {
+		StringGraphNode<?> root = this;
+		while(!root.isRoot()) {
+			root = root.getForwardParent();
+		}
+		return root;
+	}
+
+	public List<StringGraphNode<?>> getAncestors() {
+		StringGraphNode<?> root = this;
+		List<StringGraphNode<?>> ancestors = new ArrayList<>();
+		while(!root.isRoot()) {
+			ancestors.add(root);
+			root = root.getForwardParent();
+		}
+		return ancestors;
+	}
+
 	public Set<StringGraphNode<?>> is() {
 		return this.is;
 	}

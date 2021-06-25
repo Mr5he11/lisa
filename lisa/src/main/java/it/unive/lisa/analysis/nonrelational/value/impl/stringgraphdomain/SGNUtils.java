@@ -5,9 +5,9 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.C
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.Array;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
@@ -89,6 +89,7 @@ public abstract class SGNUtils {
             StringGraphNode<?> child = node.getBackwardNodes().size() == 1 ? node.getBackwardNodes().get(0) : node.getForwardNodes().get(0);
             StringGraphNode<?> forwardParent = node.getForwardParent();
             List<StringGraphNode<?>> backwardParents = new ArrayList<>(node.getBackwardParents());
+            node.removeChild(child);
 
             for (StringGraphNode<?> parent : backwardParents) {
                 parent.removeChild(node);
@@ -98,11 +99,10 @@ public abstract class SGNUtils {
             if (forwardParent != null) {
                 forwardParent.removeChild(node);
                 forwardParent.addForwardChild(child);
+                return null;
+            } else {
+                return child;
             }
-
-
-            node.removeChild(child);
-            return node.isRoot() ? child : null;
         }
 
         // Rule 8
@@ -251,21 +251,13 @@ public abstract class SGNUtils {
      *  an empty list otherwise
      */
     public static List<StringGraphNode<?>> getForwardPath(StringGraphNode<?> parent, StringGraphNode<?> child) {
-        if (parent.getForwardNodes().stream().anyMatch(c -> c.toString().equals(child.toString()))) {
-            List<StringGraphNode<?>> result = new ArrayList<>();
-            result.add(child);
-            return result;
-        } else {
-            for (StringGraphNode<?> c : parent.getForwardNodes()) {
-                List<StringGraphNode<?>> result = getForwardPath(c, child);
-                if (result.size() > 0) {
-                    List<StringGraphNode<?>> returnValue = new ArrayList<>(result);
-                    returnValue.add(c);
-                    return returnValue;
-                }
-            }
+        StringGraphNode<?> node = child;
+        List<StringGraphNode<?>> path = new ArrayList<>();
+        while (!node.isRoot() && !node.equals(parent)) {
+            path.add(node);
+            node = node.getForwardParent();
         }
-        return new ArrayList<>();
+        return node.equals(parent) ? path : new ArrayList<>();
     }
 
 
@@ -625,7 +617,7 @@ public abstract class SGNUtils {
                     if (idToNd.get(m.id).size() == 1) {
                         StringGraphNode<?> n = idToNd.get(m.id).iterator().next();
                         for (StringGraphNode<?> child : n.getForwardNodes()) {
-                            StringGraphNode newChild = initializeNodeFromSource(child);
+                            StringGraphNode<?> newChild = initializeNodeFromSource(child);
                             m.addForwardChild(newChild);
                             if (newChild instanceof OrStringGraphNode) {
                                 idToNfr.put(newChild.id, new HashSet<>(child.getForwardNodes()));
@@ -706,5 +698,116 @@ public abstract class SGNUtils {
         }
         newNode.setValue(source.getValue());
         return newNode;
+    }
+
+    /* UTILS FUNCTIONS FOR WIDENING */
+    public static StringGraphNode<?> widening(StringGraphNode<?> g_old, StringGraphNode<?> g_new) {
+        OrStringGraphNode tmp = new OrStringGraphNode();
+        tmp.addForwardChild(g_old);
+        tmp.addForwardChild(g_new);
+        StringGraphNode<?> go = g_old;
+        StringGraphNode<?> gn = normalize(tmp);
+        if (gn != null) {
+            /* CYCLE INTRODUCTION RULE */
+            Iterator<List<StringGraphNode<?>>> CIIterator = CI(go, gn).iterator();
+            if (CIIterator.hasNext()) {
+                List<StringGraphNode<?>> CIEl = CIIterator.next();
+                StringGraphNode<?> vo = CIEl.get(0);
+                StringGraphNode<?> vn = CIEl.get(1);
+                StringGraphNode<?> v = CIEl.get(2);
+                StringGraphNode<?> va = CIEl.get(3);
+            }
+            return null;
+        } else {
+            return g_new;
+        }
+    }
+
+    public static Set<List<StringGraphNode<?>>> correspondenceSet(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+        Set<List<StringGraphNode<?>>> relation = new HashSet<>();
+        relation.add(List.of(g1.getRoot(), g2.getRoot()));
+        Iterator<List<StringGraphNode<?>>> iterator = relation.iterator();
+        while (iterator.hasNext()) {
+            List<StringGraphNode<?>> pair = iterator.next();
+            StringGraphNode<?> v1 = pair.get(0);
+            StringGraphNode<?> v2 = pair.get(1);
+            if (eDepth(v1,v2) || ePf(v1,v2)) {
+                Iterator<StringGraphNode<?>> v1Iterator = v1.getForwardNodes().iterator();
+                Iterator<StringGraphNode<?>> v2Iterator = v1.getForwardNodes().iterator();
+                while(v1Iterator.hasNext() && v2Iterator.hasNext()) {
+                    relation.add(List.of(v1Iterator.next(), v2Iterator.next()));
+                }
+            }
+        }
+        return relation;
+    }
+
+    public static Set<List<StringGraphNode<?>>> topologicalClashes(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+        if (!eDepth(g1, g2) && ePf(g1, g2)) {
+            return correspondenceSet(g1, g2);
+        }
+        return new HashSet<>();
+    }
+
+    public static Set<List<StringGraphNode<?>>> wideningTopologicalClashes(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+        return topologicalClashes(g1, g2)
+                .stream()
+                .filter(pair -> {
+                    StringGraphNode<?> v = pair.get(0);
+                    StringGraphNode<?> _v = pair.get(1);
+                    return (!(_v instanceof SimpleStringGraphNode || _v instanceof ConstStringGraphNode))
+                            && (!ePf(v,_v) || v.getDepth() < _v.getDepth());
+                })
+                .collect(Collectors.toSet());
+    }
+
+    private static boolean eDepth(StringGraphNode<?> v1, StringGraphNode<?> v2) {
+        return v1.getDepth() == v2.getDepth();
+    }
+
+    private static boolean ePf(StringGraphNode<?> v1, StringGraphNode<?> v2) {
+        int arity = v1.getPrincipalLabels().size();
+        List<String> intersection = new ArrayList<>(v1.getPrincipalLabels());
+        intersection.retainAll(v2.getPrincipalLabels());
+        return intersection.size() == arity;
+    }
+
+    private static List<StringGraphNode<?>> ca(StringGraphNode<?> v, StringGraphNode<?> v1, Set<List<StringGraphNode<?>>> C) {
+        Optional<List<StringGraphNode<?>>> caOpt = C
+                .stream()
+                .filter(pair -> {
+                    StringGraphNode<?> _va = pair.get(0);
+                    StringGraphNode<?> _va1 = pair.get(1);
+                    return v.getAncestors().contains(_va) && v1.getAncestors().contains(v1);
+                })
+                .findFirst();
+        return caOpt.isPresent() ? caOpt.get() : new ArrayList<>();
+    }
+
+    private static Set<List<StringGraphNode<?>>> CI(StringGraphNode<?> go, StringGraphNode<?> gn) {
+        Set<List<StringGraphNode<?>>> CI = new HashSet<>();
+        for (List<StringGraphNode<?>> pair : wideningTopologicalClashes(go, gn)) {
+            List<StringGraphNode<?>> element = new ArrayList<>();
+            StringGraphNode<?> vo = pair.get(0);
+            StringGraphNode<?> vn = pair.get(1);
+            Optional<StringGraphNode<?>> vaOpt = vn
+                    .getAncestors()
+                    .stream()
+                    .filter(_va -> partialOrderAux(vn, _va, new HashSet<>()) && vo.getDepth() >= _va.getDepth())
+                    .findFirst();
+            if (vaOpt.isPresent()) {
+                StringGraphNode<?> va = vaOpt.get();
+                List<StringGraphNode<?>> ca = ca(vo, vn, correspondenceSet(go, gn));
+                if (ca.size() == 2) {
+                    StringGraphNode<?> v = ca.get(1);
+                    element.add(vo);
+                    element.add(vn);
+                    element.add(v);
+                    element.add(va);
+                    CI.add(element);
+                }
+            }
+        }
+        return CI;
     }
 }
