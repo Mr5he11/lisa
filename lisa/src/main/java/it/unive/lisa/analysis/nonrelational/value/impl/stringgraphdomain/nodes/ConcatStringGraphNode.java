@@ -7,6 +7,8 @@ import java.util.List;
 
 public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
+    public int desiredNumberOfChildren = 0;
+
     public ConcatStringGraphNode() {
     	super();
         this.value = 0;

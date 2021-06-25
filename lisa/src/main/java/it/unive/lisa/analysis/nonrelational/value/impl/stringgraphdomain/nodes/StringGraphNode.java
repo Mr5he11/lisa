@@ -259,12 +259,12 @@ public abstract class StringGraphNode<V> implements Serializable {
 		if (this == o) return true;
 		if (!(o instanceof StringGraphNode)) return false;
 		StringGraphNode<?> that = (StringGraphNode<?>) o;
-		return Objects.equals(value, that.value) && Objects.equals(forwardNodes, that.forwardNodes);
+		return Objects.equals(id, that.id);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(value, forwardNodes);
+		return Objects.hash(id);
 	}
 
 	@Override
@@ -275,7 +275,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	public Set<String> toStringAux() {
 		Set<String> result = new LinkedHashSet<>();
-		result.add(this.id + " [label=\"" + this.id + "\"]\n"); // TODO getLabel()
+		result.add(this.id + " [label=\"" + this.getLabel() + "\"]\n"); // TODO getLabel()
 		for (StringGraphNode<?> child : this.getForwardNodes()) {
 			result.addAll(child.toStringAux());
 			result.add(this.id+ " -> " + child.id + "\n");

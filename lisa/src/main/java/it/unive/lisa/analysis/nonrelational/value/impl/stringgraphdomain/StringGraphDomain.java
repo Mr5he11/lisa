@@ -59,7 +59,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
             concatNode.addForwardChild(left.root);
             concatNode.addForwardChild(right.root);
 
-            StringGraphNode<?> newNode = SGNUtils.compact(concatNode);
+            StringGraphNode<?> newNode = SGNUtils.normalize(concatNode);
             return new StringGraphDomain(newNode);
         }
 
@@ -72,7 +72,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         StringGraphNode<?> orNode = new OrStringGraphNode();
         orNode.addForwardChild(this.root);
         orNode.addForwardChild(other.root);
-        StringGraphNode<?> result = SGNUtils.compact(orNode);
+        StringGraphNode<?> result = SGNUtils.normalize(orNode);
         return new StringGraphDomain(result);
     }
 
@@ -218,7 +218,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         StringGraphNode<?> orNode = new OrStringGraphNode();
         orNode.addForwardChild(this.root);
         orNode.addForwardChild(other.root);
-        StringGraphNode<?> result = SGNUtils.compact(orNode);
+        StringGraphNode<?> result = SGNUtils.normalize(orNode);
         StringGraphDomain gn = new StringGraphDomain(result);
 
         // Topological clash between vo and vn:
@@ -282,7 +282,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
             vnParent.removeChild(vn);
             vnParent.addBackwardChild(va);
 
-            StringGraphNode<?> normalized = SGNUtils.compact(gn.root);
+            StringGraphNode<?> normalized = SGNUtils.normalize(gn.root);
             return new StringGraphDomain(normalized);
         } else {
             OrStringGraphNode or = new OrStringGraphNode();
@@ -312,7 +312,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
             or.addForwardChild(va);
             or.addForwardChild(vn);
 
-            StringGraphNode<?> root_normalized = SGNUtils.compact(gn.root);
+            StringGraphNode<?> root_normalized = SGNUtils.normalize(gn.root);
             return widening(new StringGraphDomain(root_normalized));
         }
     }
