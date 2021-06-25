@@ -639,7 +639,14 @@ public abstract class SGNUtils {
                         int i = 0;
                         while(i < ((ConcatStringGraphNode)m).desiredNumberOfChildren) {
                             int finalI = i;
-                            Set<StringGraphNode<?>> iThChildren = idToNd.get(m.id).stream().map(_n -> _n.getChildren().get(finalI)).collect(Collectors.toSet());
+                            Set<StringGraphNode<?>> iThChildren = idToNd
+                                    .get(m.id)
+                                    .stream()
+                                    .filter(_n -> _n.getOutDegree() > finalI)
+                                    .map(_n -> _n
+                                            .getChildren()
+                                            .get(finalI))
+                                    .collect(Collectors.toSet());
                             if (iThChildren.stream().anyMatch(_i -> _i instanceof ConstStringGraphNode && _i.getValue().equals(ConstValues.MAX))) {
                                 StringGraphNode<?> newChild = new ConstStringGraphNode(ConstValues.MAX);
                                 m.addForwardChild(newChild);
