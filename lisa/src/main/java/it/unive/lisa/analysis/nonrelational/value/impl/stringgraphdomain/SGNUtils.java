@@ -5,13 +5,13 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.C
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Array;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 
 public abstract class SGNUtils {
+
+    //==================================== COMPACTION SECTION =========================================================
 
     /**
      * Type graph compaction algorithm, taken from
@@ -260,6 +260,7 @@ public abstract class SGNUtils {
         return node.equals(parent) ? path : new ArrayList<>();
     }
 
+    //==================================== DOMAIN UTILS SECTION =======================================================
 
     /**
      * Auxiliary function for implementing partial ordering.
@@ -286,14 +287,12 @@ public abstract class SGNUtils {
     public static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
 
         // case (1)
-        if (edges.contains(StringGraphNode.createEdge(n, m))) {
+        if (edges.contains(StringGraphNode.createEdge(n, m)))
             return true;
-        }
 
         // case (2)
         else if (m instanceof ConstStringGraphNode) {
             ConstValues constValue = ((ConstStringGraphNode)m).getValue();
-
             if (ConstValues.MAX == constValue) {
                 return true;
             }
@@ -303,23 +302,16 @@ public abstract class SGNUtils {
         else if (n instanceof ConcatStringGraphNode && m instanceof ConcatStringGraphNode) {
             ConcatStringGraphNode concatN = (ConcatStringGraphNode)n;
             ConcatStringGraphNode concatM = (ConcatStringGraphNode)m;
-
             List<StringGraphNode<?>> childrenN = n.getChildren();
             List<StringGraphNode<?>> childrenM = m.getChildren();
-
             if (Objects.equals(concatN.getValue(), concatM.getValue())) {
-
                 // add current edge to edgeSet
                 edges.add(StringGraphNode.createEdge(n, m));
-
                 // for each i in [0,k] must hold: <=(n/i, m/i, edges+{m,n})
                 for (int i=0; i<concatN.getValue(); i++) {
-
                     boolean isLessOrEqual = partialOrderAux(childrenN.get(i), childrenM.get(i), edges);
-
                     if (!isLessOrEqual) return false;
                 }
-
                 return true;
             }
         }
@@ -328,46 +320,34 @@ public abstract class SGNUtils {
         else if (n instanceof OrStringGraphNode && m instanceof OrStringGraphNode) {
             int k = n.getOutDegree();
             List<StringGraphNode<?>> children = n.getChildren();
-
             // add current edge to edgeSet
             edges.add(StringGraphNode.createEdge(n, m));
-
             // for each i in [0,k] must hold: <=(n/i, m, edges+{m,n})
             for (int i=0; i<k; i++) {
-
                 boolean isLessOrEqual = partialOrderAux(children.get(i), m, edges);
-
                 if (!isLessOrEqual) return false;
             }
-
             return true;
-
         }
 
         // case (5)
         else if (m instanceof OrStringGraphNode) {
-
             StringGraphNode<?> md = null;
-
             // look for a node (named md) in prnd(m) such that lb(n) == lb(md)
             for (StringGraphNode<?> prnd: m.getPrincipalNodes()) {
                 String prndLbl = prnd.getLabel();
                 if ( (prndLbl == null && n.getLabel() == null) ||
                         (prndLbl != null && prnd.getLabel().equals(n.getLabel()))) {
-
                     md = prnd; // found one
                     break;
                 }
             }
 
-
             if (md != null) {
                 edges.add(StringGraphNode.createEdge(n, m));
                 return partialOrderAux(n, md, edges);
             }
-
         }
-
         // case (6)
         return (n.getLabel().equals( m.getLabel() ));
     }
@@ -384,33 +364,21 @@ public abstract class SGNUtils {
      */
     public static boolean strContainsAux_checkTrue(StringGraphNode<?> node, Character c) {
 
-        if (node instanceof SimpleStringGraphNode) {
+        if (node instanceof SimpleStringGraphNode)
             return ((SimpleStringGraphNode) node).getValueAsChar().equals(c);
-        }
 
         // do not check OR nodes here! At first iteration, left is the root, which can be an OR node!
-
         List<StringGraphNode<?>> children = node.getChildren();
         for (StringGraphNode<?> child: children) {
-
-            if (child instanceof OrStringGraphNode) {
-                continue;
-            }
-
-            if (child instanceof  SimpleStringGraphNode) {
-                if (strContainsAux_checkTrue(child, c)) {
+            if (child instanceof OrStringGraphNode) continue;
+            if (child instanceof  SimpleStringGraphNode)
+                if (strContainsAux_checkTrue(child, c))
                     return true;
-                }
-            }
-
             if (child instanceof ConcatStringGraphNode) {
                 Integer k = ((ConcatStringGraphNode)child).getValue();
-                for (int i=0; i<k; i++) {
-
-                    if (strContainsAux_checkTrue(child, c)) {
+                for (int i=0; i<k; i++)
+                    if (strContainsAux_checkTrue(child, c))
                         return true;
-                    }
-                }
             }
         }
 
@@ -427,45 +395,41 @@ public abstract class SGNUtils {
      */
     public static boolean strContainsAux_checkFalse(StringGraphNode<?> node, Character c) {
 
-        if (node instanceof ConstStringGraphNode) {
+        if (node instanceof ConstStringGraphNode)
             return !ConstValues.MAX.equals( ((ConstStringGraphNode)node).getValue() );
-        }
-
-        if (node instanceof SimpleStringGraphNode) {
+        if (node instanceof SimpleStringGraphNode)
             return !((SimpleStringGraphNode) node).getValueAsChar().equals(c);
-        }
 
         // for all children must hold that: no child is c or MAX
-        for (StringGraphNode<?> child: node.getChildren()) {
-            if (!strContainsAux_checkFalse(child, c)) {
+        for (StringGraphNode<?> child: node.getChildren())
+            if (!strContainsAux_checkFalse(child, c))
                 return false;
-            }
-        }
 
         // survived the check
         return true;
     }
 
+    //==================================== UTILS SECTION ==============================================================
 
+    /**
+     * If the argument node has a single character or is a concat with three characters, with the first and the third
+     * being '"', returns a simple node with the character as value. Otherwise, returns null;
+     *
+     * @param node a node that has to be transformed into a single character node
+     * @return the single character simple node
+     */
     public static SimpleStringGraphNode getSingleCharacterString(StringGraphNode<?> node) {
-        if (node instanceof SimpleStringGraphNode) {
+        if (node instanceof SimpleStringGraphNode)
             return (SimpleStringGraphNode)node;
-        }
         if (node instanceof ConcatStringGraphNode) {
             List<StringGraphNode<?>> children = node.getChildren();
-            if (
-                    node.getOutDegree() == 3 &&
-                            "\"".equals(children.get(0).getValue()) &&
-                            "\"".equals(children.get(2).getValue())
-            ) {
+            if (node.getOutDegree() == 3
+                    && "\"".equals(children.get(0).getValue())
+                    && "\"".equals(children.get(2).getValue()))
                 return getSingleCharacterString(children.get(1));
-            }
-
-            if (node.getOutDegree() == 1) {
+            if (node.getOutDegree() == 1)
                 return getSingleCharacterString(children.get(0));
-            }
         }
-
         return null;
     }
 
@@ -476,50 +440,13 @@ public abstract class SGNUtils {
      * @return the unquoted string
      * */
     public static String unquote(String value) {
-
         if (value == null)
             return "";
-
-        if (value.startsWith("\"")) {
+        if (value.startsWith("\""))
             value = value.substring(1);
-        }
-        if (value.endsWith("\"")) {
+        if (value.endsWith("\""))
             value = value.substring(0, value.length()-1);
-        }
-
         return value;
-    }
-
-    /**
-     * Executes recursively a certain operation for each combination of 2 nodes, where one node comes from a certain
-     * source tree and the other comes from the other provided source tree.
-     *
-     * @param node1 the root of the first source tree
-     * @param node2 the root of the second source tree
-     * @param function the function to execute for each pair of nodes
-     * @param <T> the return type of function
-     * @return the first non null result that gets computed, if present - null otherwise
-     */
-    public static <T> T checkConditionInGraphs(
-            StringGraphNode<?> node1,
-            StringGraphNode<?> node2,
-            BiFunction<StringGraphNode<?>, StringGraphNode<?>, T> function
-    ) {
-        T result;
-/*
-        for(StringGraphNode<?> child : node1.getForwardNodes()) {
-            result = checkConditionInGraphs(child, node2, function);
-            if (result != null)
-                return result;
-        }
-*/
-        for(StringGraphNode<?> child : node2.getForwardNodes()) {
-            result = checkConditionInGraphs(node1, child, function);
-            if (result != null)
-                return result;
-        }
-
-        return function.apply(node1, node2);
     }
 
     /**
@@ -529,13 +456,20 @@ public abstract class SGNUtils {
      * @param replacement the node that should take the place of original
      */
     public static void replace(StringGraphNode<?> original, StringGraphNode<?> replacement) {
-        original.getForwardNodes().forEach(replacement::addForwardChild);
-        original.getBackwardNodes().forEach(replacement::addBackwardChild);
-        original.getForwardParent().addForwardChild(replacement);
-        original.getForwardParent().removeChild(original);
-        original.getBackwardParents().forEach(parent -> parent.addBackwardChild(replacement));
-
+        if (!original.equals(replacement)) {
+            original.getBackwardParents().forEach(parent -> parent.addBackwardChild(replacement));
+            List<StringGraphNode<?>> oForwardChildren = new ArrayList<>(original.getForwardNodes());
+            List<StringGraphNode<?>> oBackwardChildren = new ArrayList<>(original.getBackwardNodes());
+            oForwardChildren.forEach(replacement::addForwardChild);
+            oBackwardChildren.forEach(replacement::addBackwardChild);
+            if (original.getForwardParent() != null) {
+                original.getForwardParent().addForwardChild(replacement);
+                original.getForwardParent().removeChild(original);
+            }
+        }
     }
+
+    //==================================== NORMALIZATION SECTION ======================================================
 
     /**
      * Normalization algorithm
@@ -635,9 +569,7 @@ public abstract class SGNUtils {
                                     .get(m.id)
                                     .stream()
                                     .filter(_n -> _n.getOutDegree() > finalI)
-                                    .map(_n -> _n
-                                            .getChildren()
-                                            .get(finalI))
+                                    .map(_n -> (_n).getChildren().get(finalI))
                                     .collect(Collectors.toSet());
                             if (iThChildren.stream().anyMatch(_i -> _i instanceof ConstStringGraphNode && _i.getValue().equals(ConstValues.MAX))) {
                                 StringGraphNode<?> newChild = new ConstStringGraphNode(ConstValues.MAX);
@@ -700,43 +632,59 @@ public abstract class SGNUtils {
         return newNode;
     }
 
-    /* UTILS FUNCTIONS FOR WIDENING */
+    //========================================= WIDENING SECTION ======================================================
+
     public static StringGraphNode<?> widening(StringGraphNode<?> g_old, StringGraphNode<?> g_new) {
         OrStringGraphNode tmp = new OrStringGraphNode();
         tmp.addForwardChild(g_old);
         tmp.addForwardChild(g_new);
         StringGraphNode<?> go = g_old;
+        normalize(g_new);
         StringGraphNode<?> gn = normalize(tmp);
         if (gn != null) {
+            if (gn.isLessOrEqual(go))
+                return go;
+
             /* CYCLE INTRODUCTION RULE */
             Iterator<List<StringGraphNode<?>>> CIIterator = CI(go, gn).iterator();
             if (CIIterator.hasNext()) {
                 List<StringGraphNode<?>> CIEl = CIIterator.next();
-                StringGraphNode<?> vo = CIEl.get(0);
+                StringGraphNode<?> v = CIEl.get(0);
                 StringGraphNode<?> vn = CIEl.get(1);
-                StringGraphNode<?> v = CIEl.get(2);
                 StringGraphNode<?> va = CIEl.get(3);
+                v.removeChild(vn);
+                v.addBackwardChild(va);
+                return widening(go,gn);
+            } else {
+                /* REPLACEMENT RULE */
+                Iterator<List<StringGraphNode<?>>> CRIterator = CR(go, gn).iterator();
+                if (CRIterator.hasNext()) {
+                    List<StringGraphNode<?>> CREl = CRIterator.next();
+                    StringGraphNode<?> vn = CREl.get(0);
+                    StringGraphNode<?> va = CREl.get(1);
+                    replace(va, vn);
+                    return widening(go, gn);
+                } else {
+                    return gn;
+                }
             }
-            return null;
         } else {
             return g_new;
         }
     }
 
     public static Set<List<StringGraphNode<?>>> correspondenceSet(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+        return correspondenceSetAux(g1, g2);
+    }
+
+    private static Set<List<StringGraphNode<?>>> correspondenceSetAux(StringGraphNode<?> g1, StringGraphNode<?> g2) {
         Set<List<StringGraphNode<?>>> relation = new HashSet<>();
-        relation.add(List.of(g1.getRoot(), g2.getRoot()));
-        Iterator<List<StringGraphNode<?>>> iterator = relation.iterator();
-        while (iterator.hasNext()) {
-            List<StringGraphNode<?>> pair = iterator.next();
-            StringGraphNode<?> v1 = pair.get(0);
-            StringGraphNode<?> v2 = pair.get(1);
-            if (eDepth(v1,v2) || ePf(v1,v2)) {
-                Iterator<StringGraphNode<?>> v1Iterator = v1.getForwardNodes().iterator();
-                Iterator<StringGraphNode<?>> v2Iterator = v1.getForwardNodes().iterator();
-                while(v1Iterator.hasNext() && v2Iterator.hasNext()) {
-                    relation.add(List.of(v1Iterator.next(), v2Iterator.next()));
-                }
+        relation.add(List.of(g1,g2));
+        if (eDepth(g1,g2) || ePf(g1,g2)) {
+            Iterator<StringGraphNode<?>> v1Iterator = g1.getForwardNodes().iterator();
+            Iterator<StringGraphNode<?>> v2Iterator = g2.getForwardNodes().iterator();
+            while(v1Iterator.hasNext() && v2Iterator.hasNext()) {
+                relation.addAll(correspondenceSetAux(v1Iterator.next(), v2Iterator.next()));
             }
         }
         return relation;
@@ -766,10 +714,20 @@ public abstract class SGNUtils {
     }
 
     private static boolean ePf(StringGraphNode<?> v1, StringGraphNode<?> v2) {
-        int arity = v1.getPrincipalLabels().size();
-        List<String> intersection = new ArrayList<>(v1.getPrincipalLabels());
-        intersection.retainAll(v2.getPrincipalLabels());
-        return intersection.size() == arity;
+        Set<String> v1PrincipalFunctors = principalFunctors(v1);
+        Set<String> v2PrincipalFunctors = principalFunctors(v2);
+        Set<String> intersection = new HashSet<>(v1PrincipalFunctors);
+        intersection.retainAll(v2PrincipalFunctors);
+        return intersection.size() == v1PrincipalFunctors.size() && v1PrincipalFunctors.size() == v2PrincipalFunctors.size();
+    }
+
+    private static Set<String> principalFunctors(StringGraphNode<?> v) {
+        return v
+                .getForwardNodes()
+                .stream()
+                .filter(_v -> _v instanceof ConcatStringGraphNode)
+                .map(StringGraphNode::getLabel)
+                .collect(Collectors.toSet());
     }
 
     private static List<StringGraphNode<?>> ca(StringGraphNode<?> v, StringGraphNode<?> v1, Set<List<StringGraphNode<?>>> C) {
@@ -778,10 +736,10 @@ public abstract class SGNUtils {
                 .filter(pair -> {
                     StringGraphNode<?> _va = pair.get(0);
                     StringGraphNode<?> _va1 = pair.get(1);
-                    return v.getAncestors().contains(_va) && v1.getAncestors().contains(v1);
+                    return _va.getForwardNodes().contains(v) && _va1.getForwardNodes().contains(v1);
                 })
                 .findFirst();
-        return caOpt.isPresent() ? caOpt.get() : new ArrayList<>();
+        return caOpt.orElseGet(ArrayList::new);
     }
 
     private static Set<List<StringGraphNode<?>>> CI(StringGraphNode<?> go, StringGraphNode<?> gn) {
@@ -793,14 +751,14 @@ public abstract class SGNUtils {
             Optional<StringGraphNode<?>> vaOpt = vn
                     .getAncestors()
                     .stream()
-                    .filter(_va -> partialOrderAux(vn, _va, new HashSet<>()) && vo.getDepth() >= _va.getDepth())
+                    .filter(_va -> vn.isLessOrEqual(_va) && vo.getDepth() >= _va.getDepth())
                     .findFirst();
             if (vaOpt.isPresent()) {
                 StringGraphNode<?> va = vaOpt.get();
                 List<StringGraphNode<?>> ca = ca(vo, vn, correspondenceSet(go, gn));
                 if (ca.size() == 2) {
                     StringGraphNode<?> v = ca.get(1);
-                    element.add(vo);
+                    element.add(v);
                     element.add(vn);
                     element.add(v);
                     element.add(va);
@@ -809,5 +767,28 @@ public abstract class SGNUtils {
             }
         }
         return CI;
+    }
+
+    private static Set<List<StringGraphNode<?>>> CR(StringGraphNode<?> go, StringGraphNode<?> gn) {
+        Set<List<StringGraphNode<?>>> CR = new HashSet<>();
+        for (List<StringGraphNode<?>> pair : wideningTopologicalClashes(go, gn)) {
+            List<StringGraphNode<?>> element = new ArrayList<>();
+            StringGraphNode<?> vo = pair.get(0);
+            StringGraphNode<?> vn = pair.get(1);
+            Optional<StringGraphNode<?>> vaOpt = vn
+                    .getAncestors()
+                    .stream()
+                    .filter(_va -> !vn.isLessOrEqual(_va)
+                            && principalFunctors(_va).containsAll(principalFunctors(vn))
+                            && vo.getDepth() >= _va.getDepth())
+                    .findFirst();
+            if (vaOpt.isPresent()) {
+                StringGraphNode<?> va = vaOpt.get();
+                element.add(vn);
+                element.add(va);
+                CR.add(element);
+            }
+        }
+        return CR;
     }
 }

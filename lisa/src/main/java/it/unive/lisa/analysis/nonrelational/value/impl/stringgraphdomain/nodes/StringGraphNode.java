@@ -257,8 +257,8 @@ public abstract class StringGraphNode<V> implements Serializable {
 		StringGraphNode<?> root = this;
 		List<StringGraphNode<?>> ancestors = new ArrayList<>();
 		while(!root.isRoot()) {
-			ancestors.add(root);
 			root = root.getForwardParent();
+			ancestors.add(root);
 		}
 		return ancestors;
 	}

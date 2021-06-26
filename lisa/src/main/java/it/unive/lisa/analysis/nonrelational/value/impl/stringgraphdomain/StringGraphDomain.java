@@ -12,8 +12,8 @@ import it.unive.lisa.symbolic.value.Constant;
 import java.util.*;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
-    private final StringGraphNode<?> root;
 
+    private final StringGraphNode<?> root;
     private final static StringGraphDomain TOP = new StringGraphDomain(new ConstStringGraphNode(ConstValues.MAX));
     private final static StringGraphDomain BOTTOM = new StringGraphDomain(new ConstStringGraphNode(ConstValues.MIN));
 
@@ -44,8 +44,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
     protected StringGraphDomain evalNonNullConstant(Constant constant, ProgramPoint pp) {
         if (constant.getValue() instanceof String) {
             String value = (String) constant.getValue();
-            StringGraphNode<?> node = StringGraphNode.create(value);
-            return new StringGraphDomain(node);
+            return new StringGraphDomain(StringGraphNode.create(value));
         }
         return top();
     }
@@ -54,15 +53,11 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
     protected StringGraphDomain evalBinaryExpression(BinaryOperator operator, StringGraphDomain left,
                                                      StringGraphDomain right, ProgramPoint pp) {
         if (BinaryOperator.STRING_CONCAT == operator) {
-
             StringGraphNode<?> concatNode = new ConcatStringGraphNode();
             concatNode.addForwardChild(left.root);
             concatNode.addForwardChild(right.root);
-
-            StringGraphNode<?> newNode = SGNUtils.normalize(concatNode);
-            return new StringGraphDomain(newNode);
+            return new StringGraphDomain(SGNUtils.normalize(concatNode));
         }
-
         return top();
     }
 
@@ -213,108 +208,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     @Override
     protected StringGraphDomain wideningAux(StringGraphDomain other) throws SemanticException {
-        // 4.4.4
-        StringGraphDomain go = this;
-        StringGraphNode<?> orNode = new OrStringGraphNode();
-        orNode.addForwardChild(this.root);
-        orNode.addForwardChild(other.root);
-        StringGraphNode<?> result = SGNUtils.normalize(orNode);
-        StringGraphDomain gn = new StringGraphDomain(result);
-
-        // Topological clash between vo and vn:
-        // 	(1): [vo]: OR node in gOld and [vn]: OR node in gNew where prlb(vo) <> prlb(vn)
-        // 	(2): [vo]: OR node in gOld and [vn]: OR node in gNew where depth(vo) < depth(vn
-
-        
-        StringGraphNode<?> vn =  SGNUtils.<StringGraphNode<?>>checkConditionInGraphs(go.root, gn.root, (oldNode, newNode) -> {
-            if (oldNode instanceof OrStringGraphNode && newNode instanceof OrStringGraphNode) {
-                // (1) : prlb(vo) <> prlb(vn)
-                Set<String> oldPrlb = oldNode.getPrincipalLabels();
-                Set<String> newPrlb = newNode.getPrincipalLabels();
-                if ((oldPrlb == null && newPrlb != null) || (oldPrlb != null && !oldPrlb.equals(newPrlb))){
-                    return newNode;
-                }
-
-                // (2) : depth(vo) < depth(vn)
-                Integer oldDistance = oldNode.getDistance(go.root);
-                Integer newDistance = newNode.getDistance(gn.root);
-                if (oldDistance != null && newDistance != null) {
-                    if (oldDistance < newDistance) {
-                       return newNode;
-                    }
-                }
-            }
-            return null;
-        });
-
-
-        // If one of the previous is true, then search for an ancestor [va] of [vn] such that prlb(vn) is INCLUDED in prlb(va)
-        // else do nothing
-        if (vn == null) {
-            return gn;
-        }
-
-        StringGraphNode<?> va = null;
-        Set<String> nPrlb = vn.getPrincipalLabels();
-
-        if (nPrlb != null) {
-            StringGraphNode<?> parent = vn.getForwardParent();
-            while (parent != null) {
-                Set<String> parentPrlb = parent.getPrincipalLabels();
-                if (parentPrlb != null && parentPrlb.containsAll(nPrlb)) {
-                    // found ancestor!
-                    va = parent;
-                    break;
-                }
-                parent = parent.getForwardParent();
-            }
-        }
-
-        if (va == null) {
-            return gn;
-        }
-
-        // If ancestor [va] is found and <=(vn, va) then a cycle can be introduced.
-        // else replace [va] with a OR node with [va, vn] as children. Then re-apply widening.
-        if (vn.isLessOrEqual(va)) {
-            // introduce a cycle in the graph!
-            StringGraphNode<?> vnParent = vn.getForwardParent();
-            vnParent.removeChild(vn);
-            vnParent.addBackwardChild(va);
-
-            StringGraphNode<?> normalized = SGNUtils.normalize(gn.root);
-            return new StringGraphDomain(normalized);
-        } else {
-            OrStringGraphNode or = new OrStringGraphNode();
-
-            // remove va from parent and add or as child
-            if (!va.isRoot()) {
-                StringGraphNode<?> vaParent = va.getForwardParent();
-                vaParent.removeChild(va);
-                vaParent.addForwardChild(or);
-            }
-
-/*
-            StringGraphNode<?> currentNode = vn;
-            StringGraphNode<?> parent = currentNode.getForwardParent();
-            while (parent != null && !parent.equals(va)) {
-
-                parent.removeChild(currentNode);
-                currentNode = parent;
-                parent = currentNode.getForwardParent();
-
-            }
-*/
-            // remove vn from parent (since now vn is child of or)
-            vn.getForwardParent().removeChild(vn);
-
-            // add va and vn as children
-            or.addForwardChild(va);
-            or.addForwardChild(vn);
-
-            StringGraphNode<?> root_normalized = SGNUtils.normalize(gn.root);
-            return widening(new StringGraphDomain(root_normalized));
-        }
+        return new StringGraphDomain(SGNUtils.widening(this.root, other.root));
     }
 
     @Override
