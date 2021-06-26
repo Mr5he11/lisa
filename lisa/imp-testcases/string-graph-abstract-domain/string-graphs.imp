@@ -14,22 +14,32 @@ class sg {
         }
     }
 
+    f_unkown_contains() {
+        def y = 0;
+        def x = "ciao";
+        if (y > 100) {
+            x = strcat(x,"a");
+        }
+    }
+
     f_not_loop() {
         def x = "ciao";
         while (strcon(x,"u")) {
             x = strcat(x,"a");
         }
     }
-    /*
 
+    /*
     f_loop() {
         def x = "ciao";
         while (strcon(x,"c")) {
             x = strcat(x,"a");
         }
         x = strcat(x,"b");
-    }
-    */
+    }*/
+
+
+
 
     f_prog_1() {
         def y = 0;

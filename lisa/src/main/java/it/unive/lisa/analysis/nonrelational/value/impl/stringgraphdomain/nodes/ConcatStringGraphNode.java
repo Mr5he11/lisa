@@ -42,8 +42,8 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
 
     @Override
     public <C extends StringGraphNode<?>> void removeChild(C child) {
-        if (this.forwardNodes.remove(child) || this.backwardNodes.remove(child)) {
-            child.removeParent(this);
+        if (this.getChildren().contains(child)) {
+            super.removeChild(child);
             this.value -= 1;
         }
     }
@@ -70,7 +70,7 @@ public class ConcatStringGraphNode extends StringGraphNode<Integer> {
     public List<String> getDenotation() {
         String s = "";
         List<String> result = new ArrayList<>();
-        for (StringGraphNode<?> n : this.getForwardNodes()) {
+        for (StringGraphNode<?> n : this.getForwardChildren()) {
             if (n.isFinite()) {
                 for (String str : n.getDenotation()) {
                     // Concat happens only if none of the child nodes is TOP, otherwise result is all possible strings

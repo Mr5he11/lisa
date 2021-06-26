@@ -137,8 +137,8 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
                 Set<StringGraphNode<?>> ris_no_m = new HashSet<>(l.ris());
                 ris_no_m.remove(m);
 
-                for (int idx = 0; idx < m.getForwardNodes().size(); idx++) {
-                    StringGraphNode<?> mi = m.getForwardNodes().get(idx);
+                for (int idx = 0; idx < m.getForwardChildren().size(); idx++) {
+                    StringGraphNode<?> mi = m.getForwardChildren().get(idx);
                     StringGraphNode<?> li = new OrStringGraphNode();
                     li.is().add(mi);
                     li.is().addAll(ris_no_m);
@@ -178,13 +178,13 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
                         });
 
 
-                        for (int idx = 0; idx < n.getForwardNodes().size(); idx++) {
-                            StringGraphNode<?> ni = n.getForwardNodes().get(idx);
+                        for (int idx = 0; idx < n.getForwardChildren().size(); idx++) {
+                            StringGraphNode<?> ni = n.getForwardChildren().get(idx);
                             StringGraphNode<?> li = new OrStringGraphNode();
                             li.is().add(ni);
 
                             int finalIdx = idx;
-                            S_md.forEach(m ->  li.is().add(m.getForwardNodes().get(finalIdx)));
+                            S_md.forEach(m ->  li.is().add(m.getForwardChildren().get(finalIdx)));
 
                             S_ul.add(li);
 

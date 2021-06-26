@@ -56,8 +56,8 @@ public class StringGraphTest {
         System.out.println(result2);
         assert result2 instanceof OrStringGraphNode &&
                 result2.getOutDegree() == 2 &&
-                result2.getForwardNodes().get(0).getValue().equals("a") &&
-                result2.getForwardNodes().get(1).getValue().equals("b");
+                result2.getForwardChildren().get(0).getValue().equals("a") &&
+                result2.getForwardChildren().get(1).getValue().equals("b");
 
         // case 8
         StringGraphNode<?> node8 = new ConcatStringGraphNode();

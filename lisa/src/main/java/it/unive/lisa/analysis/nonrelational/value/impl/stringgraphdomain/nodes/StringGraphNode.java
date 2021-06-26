@@ -6,8 +6,6 @@ import it.unive.lisa.analysis.nonrelational.value.impl.stringgraphdomain.nodes.C
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 
 
 public abstract class StringGraphNode<V> implements Serializable {
@@ -15,22 +13,18 @@ public abstract class StringGraphNode<V> implements Serializable {
 	protected V value;
 	public final String id;
 	protected StringGraphNode<?> forwardParent;
-	protected final List<StringGraphNode<?>> forwardNodes;
-	protected final List<StringGraphNode<?>> backwardNodes;
+	protected final List<StringGraphEdge> childrenEdges;
 	protected final List<StringGraphNode<?>> backwardParents;
 	private static int counter = 0;
-
-	private Set<StringGraphNode<?>> is;
+	private final Set<StringGraphNode<?>> is;
 	
 	public StringGraphNode() {
-		this.forwardNodes = new ArrayList<>();
-		this.backwardNodes = new ArrayList<>();
-		this.backwardParents = new ArrayList<>();
+		this.is = new HashSet<>();
 		this.forwardParent = null;
+		this.childrenEdges = new ArrayList<>();
+		this.backwardParents = new ArrayList<>();
 		this.id = "id_" + StringGraphNode.counter;
 		StringGraphNode.counter += 1;
-
-		this.is = new HashSet<>();
 	}
 	
 	/**
@@ -68,7 +62,7 @@ public abstract class StringGraphNode<V> implements Serializable {
     
 
     public int getOutDegree() {
-        return this.forwardNodes.size() + this.backwardNodes.size();
+        return this.childrenEdges.size();
     }
 
     public int getInDegree() {
@@ -83,12 +77,28 @@ public abstract class StringGraphNode<V> implements Serializable {
         return forwardParent == null;
     }
 
-	public List<StringGraphNode<?>> getForwardNodes() {
-		return forwardNodes;
+	public List<StringGraphEdge> getChildrenEdges() {
+		return childrenEdges;
 	}
 
-	public List<StringGraphNode<?>> getBackwardNodes() {
-		return backwardNodes;
+	public List<StringGraphNode<?>> getChildren() {
+		return childrenEdges.stream().map(StringGraphEdge::getNode).collect(Collectors.toList());
+	}
+
+	public List<StringGraphNode<?>> getForwardChildren() {
+		return childrenEdges
+				.stream()
+				.filter(c -> c.getType() == StringGraphEdge.EdgeTypes.FORWARD)
+				.map(StringGraphEdge::getNode)
+				.collect(Collectors.toList());
+	}
+
+	public List<StringGraphNode<?>> getBackwardChildren() {
+		return childrenEdges
+				.stream()
+				.filter(c -> c.getType() == StringGraphEdge.EdgeTypes.BACKWARD)
+				.map(StringGraphEdge::getNode)
+				.collect(Collectors.toList());
 	}
 
 	public StringGraphNode<?> getForwardParent() {
@@ -99,25 +109,34 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return backwardParents;
 	}
 
+	private <C extends StringGraphNode<?>> void addChild(C child, StringGraphEdge.EdgeTypes type) {
+		this.childrenEdges.add(new StringGraphEdge(child, type));
+	}
+
+	private <C extends StringGraphNode<?>> void addChild(C child, StringGraphEdge.EdgeTypes type, int index) {
+		this.childrenEdges.add(index, new StringGraphEdge(child, type));
+	}
+
 	public <C extends StringGraphNode<?>> void addForwardChild(C child) {
-    	if (!child.isRoot()) { child.getForwardParent().getForwardNodes().remove(child); }
+		if (!child.isRoot()) { child.getForwardParent().removeChild(child); }
+		addChild(child, StringGraphEdge.EdgeTypes.FORWARD);
 		child.setForwardParent(this);
-    	if (!this.forwardNodes.contains(child))
-    		this.forwardNodes.add(child);
     }
 
 	public <C extends StringGraphNode<?>> void addForwardChild(int index, C child) {
-		if (!child.isRoot()) { child.getForwardParent().getForwardNodes().remove(child);}
+		if (!child.isRoot()) { child.getForwardParent().removeChild(child); }
+		addChild(child, StringGraphEdge.EdgeTypes.FORWARD, index);
 		child.setForwardParent(this);
-		this.forwardNodes.add(index, child);
 	}
 
 	public <C extends StringGraphNode<?>> void addBackwardChild(C child) {
-		child.getBackwardParents().forEach( p -> p.getBackwardNodes().remove(child));
+		addChild(child, StringGraphEdge.EdgeTypes.BACKWARD);
 		child.addBackwardParent(this);
-		this.backwardNodes.add(child);
-		if (!this.backwardNodes.contains(child))
-			this.backwardNodes.add(child);
+	}
+
+	public <C extends StringGraphNode<?>> void addBackwardChild(int index, C child) {
+		addChild(child, StringGraphEdge.EdgeTypes.BACKWARD, index);
+		child.addBackwardParent(this);
 	}
 
 	protected <P extends StringGraphNode<?>> void setForwardParent(P forwardParent) {
@@ -129,20 +148,14 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	public <C extends StringGraphNode<?>> void removeChild(C child) {
-    	this.forwardNodes.remove(child);
-		this.backwardNodes.remove(child);
-    	child.removeParent(this);
+    	if (this.childrenEdges.removeIf(e -> e.getNode().equals(child)))
+			child.removeParent(this);
     }
 
-    public <P extends StringGraphNode<?>> void removeParent(P parent) {
-    	if (!isRoot() && getForwardParent().equals(parent)) { setForwardParent(null); }
-    	this.backwardParents.remove(parent);
-    }
-
-	public List<StringGraphNode<?>> getChildren() {
-		return Stream
-				.concat(getForwardNodes().stream(), getBackwardNodes().stream())
-				.collect(Collectors.toList());
+	public <P extends StringGraphNode<?>> void removeParent(P parent) {
+		if (parent.equals(this.forwardParent))
+			this.forwardParent = null;
+		this.backwardParents.remove(parent);
 	}
 
 	public V getValue() { return value; }
@@ -173,11 +186,11 @@ public abstract class StringGraphNode<V> implements Serializable {
 		if (this.isLeaf()) return true;
 		else {
 			// Otherwise the node itself and all child nodes must be checked not to have backward children
-			if (this.getBackwardNodes().size() > 0) {
+			if (this.getBackwardChildren().size() > 0) {
 				return false;
 			} else {
 				boolean response = true;
-				Iterator<StringGraphNode<?>> i = this.getForwardNodes().iterator();
+				Iterator<StringGraphNode<?>> i = this.getForwardChildren().iterator();
 				while(response && i.hasNext()) {
 					StringGraphNode<?> node = i.next();
 					response = node.isFinite();
@@ -209,30 +222,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	public boolean isLessOrEqual(StringGraphNode<?> other) {
 		return SGNUtils.partialOrderAux(this, other, new HashSet<>());
-	}
-
-	/**
-	 * Computes the number of nodes in a graph between two given nodes, following a depth visit.
-	 * If the node given as parameter is not an ancestor of this, then returns null
-	 *
-	 * @param ancestor the ancestor of this from which to compute the distance (depth)
-	 * @return the distance between ancestor and this if there is a forward path between them, null otherwise
-	 */
-	public Integer getDistance(StringGraphNode<?> ancestor) {
-		Integer depth = 0;
-		StringGraphNode<?> parent = getForwardParent();
-		while (parent != null) {
-			if (parent.equals(ancestor)) {
-				break;
-			}
-			parent = parent.getForwardParent();
-			depth++;
-		}
-
-		if (parent == null) {
-			return null;
-		}
-		return depth;
 	}
 
 	public int getDepth() {
@@ -268,9 +257,7 @@ public abstract class StringGraphNode<V> implements Serializable {
 	}
 
 	public Set<StringGraphNode<?>> ris() {
-		return this.is != null ?
-				this.is.stream().filter(n -> ConstValues.MAX != n.getValue()).collect(Collectors.toSet())
-				: new HashSet<>();
+		return this.is.stream().filter(n -> ConstValues.MAX != n.getValue()).collect(Collectors.toSet());
 	}
 
 	public boolean isAncestor(StringGraphNode<?> descendant) {
@@ -304,11 +291,11 @@ public abstract class StringGraphNode<V> implements Serializable {
 	public Set<String> toStringAux() {
 		Set<String> result = new LinkedHashSet<>();
 		result.add(this.id + " [label=\"" + this.getLabel() + "\"]\n"); // TODO getLabel()
-		for (StringGraphNode<?> child : this.getForwardNodes()) {
+		for (StringGraphNode<?> child : this.getForwardChildren()) {
 			result.addAll(child.toStringAux());
 			result.add(this.id+ " -> " + child.id + "\n");
 		}
-		for (StringGraphNode<?> child : this.getBackwardNodes()) {
+		for (StringGraphNode<?> child : this.getBackwardChildren()) {
 			result.add(this.id + " -> " + child.id + " [style=dashed]\n");
 		}
 		return result;

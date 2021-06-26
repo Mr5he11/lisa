@@ -55,7 +55,7 @@ public abstract class SGNUtils {
 
     private static StringGraphNode<?> compactAux(StringGraphNode<?> node) {
         // The algorithm is bottom up, starting from the leaves, so it recursively gets to the leaves first
-        List<StringGraphNode<?>> children = new ArrayList<>(node.getForwardNodes());
+        List<StringGraphNode<?>> children = new ArrayList<>(node.getForwardChildren());
         for (StringGraphNode<?> child : children) {
             StringGraphNode<?> newChild = compactAux(child);
             if (newChild != child) {
@@ -79,14 +79,14 @@ public abstract class SGNUtils {
             return new ConstStringGraphNode(ConstValues.MIN);
 
         // Rule 5
-        if (node instanceof OrStringGraphNode && node.getForwardNodes().stream().anyMatch(c -> c.getValue() == ConstValues.MAX)) {
+        if (node instanceof OrStringGraphNode && node.getForwardChildren().stream().anyMatch(c -> c.getValue() == ConstValues.MAX)) {
             removeProperDescendants(node);
             return new ConstStringGraphNode(ConstValues.MAX);
         }
 
         // Rule 7
         if (node instanceof OrStringGraphNode && node.getOutDegree() == 1) {
-            StringGraphNode<?> child = node.getBackwardNodes().size() == 1 ? node.getBackwardNodes().get(0) : node.getForwardNodes().get(0);
+            StringGraphNode<?> child = node.getBackwardChildren().size() == 1 ? node.getBackwardChildren().get(0) : node.getForwardChildren().get(0);
             StringGraphNode<?> forwardParent = node.getForwardParent();
             List<StringGraphNode<?>> backwardParents = new ArrayList<>(node.getBackwardParents());
             node.removeChild(child);
@@ -106,8 +106,8 @@ public abstract class SGNUtils {
         }
 
         // Rule 8
-        if (node.getBackwardNodes().size() > 0) {
-            List<StringGraphNode<?>> backwardChildren = new ArrayList<>(node.getBackwardNodes());
+        if (node.getBackwardChildren().size() > 0) {
+            List<StringGraphNode<?>> backwardChildren = new ArrayList<>(node.getBackwardChildren());
             for (StringGraphNode<?> child : backwardChildren) {
                 List<StringGraphNode<?>> forwardPath = getForwardPath(child, node);
                 if (forwardPath.size() > 0 && forwardPath.stream().allMatch(k -> k instanceof OrStringGraphNode)) {
@@ -126,26 +126,26 @@ public abstract class SGNUtils {
         // Specific rules for or nodes
         if (node instanceof OrStringGraphNode) {
             // Rule 2
-            List<StringGraphNode<?>> toBeRemoved = node.getForwardNodes().stream()
+            List<StringGraphNode<?>> toBeRemoved = node.getForwardChildren().stream()
                     .filter(c -> c.getValue() == ConstValues.MIN)
                     .collect(Collectors.toList());
             for (StringGraphNode<?> child : toBeRemoved)
                 node.removeChild(child);
 
             // Rule 3
-            if (node.getForwardNodes().contains(node) || node.getBackwardNodes().contains(node)) {
+            if (node.getForwardChildren().contains(node) || node.getBackwardChildren().contains(node)) {
                 node.removeChild(node);
             }
 
             // Rule 6
-            toBeRemoved = node.getForwardNodes().stream()
+            toBeRemoved = node.getForwardChildren().stream()
                     .filter(c -> (c instanceof OrStringGraphNode && c.getInDegree() == 1))
                     .collect(Collectors.toList());
 
             for (StringGraphNode<?> child : toBeRemoved) {
                 node.removeChild(child);
-                List<StringGraphNode<?>> childForwardChildren = new ArrayList<>(child.getForwardNodes());
-                List<StringGraphNode<?>> childBackwardChildren = new ArrayList<>(child.getBackwardNodes());
+                List<StringGraphNode<?>> childForwardChildren = new ArrayList<>(child.getForwardChildren());
+                List<StringGraphNode<?>> childBackwardChildren = new ArrayList<>(child.getBackwardChildren());
                 for (StringGraphNode<?> c : childForwardChildren) {
                     child.removeChild(c);
                     node.addForwardChild(c);
@@ -175,8 +175,8 @@ public abstract class SGNUtils {
 
             // Rule 2 from paper A suite of abstract domains for static analysis of string values - 4.4.1
             if (
-                node.getBackwardNodes().isEmpty() &&
-                node.getForwardNodes().stream().allMatch(n -> n instanceof ConstStringGraphNode && n.getValue().equals(ConstValues.MAX))
+                node.getBackwardChildren().isEmpty() &&
+                node.getForwardChildren().stream().allMatch(n -> n instanceof ConstStringGraphNode && n.getValue().equals(ConstValues.MAX))
             ) {
                 return new ConstStringGraphNode(ConstValues.MAX);
             }
@@ -209,7 +209,7 @@ public abstract class SGNUtils {
      * @param node The node from which to remove the proper descendants
      */
     private static void removeProperDescendants(StringGraphNode<?> node) {
-        List<StringGraphNode<?>> toBeRemoved = new ArrayList<>(node.getForwardNodes());
+        List<StringGraphNode<?>> toBeRemoved = new ArrayList<>(node.getForwardChildren());
         for (StringGraphNode<?> child : toBeRemoved) {
             // remove child's children only if child does not have other parents
             if (child.getInDegree() == 1)
@@ -458,8 +458,8 @@ public abstract class SGNUtils {
     public static void replace(StringGraphNode<?> original, StringGraphNode<?> replacement) {
         if (!original.equals(replacement)) {
             original.getBackwardParents().forEach(parent -> parent.addBackwardChild(replacement));
-            List<StringGraphNode<?>> oForwardChildren = new ArrayList<>(original.getForwardNodes());
-            List<StringGraphNode<?>> oBackwardChildren = new ArrayList<>(original.getBackwardNodes());
+            List<StringGraphNode<?>> oForwardChildren = new ArrayList<>(original.getForwardChildren());
+            List<StringGraphNode<?>> oBackwardChildren = new ArrayList<>(original.getBackwardChildren());
             oForwardChildren.forEach(replacement::addForwardChild);
             oBackwardChildren.forEach(replacement::addBackwardChild);
             if (original.getForwardParent() != null) {
@@ -546,15 +546,15 @@ public abstract class SGNUtils {
                         S_ul.remove(m);
                         S_sn.add(m);
                     }
-                } else {
+                } else if (m instanceof ConcatStringGraphNode) {
                     // CASE 4
                     if (idToNd.get(m.id).size() == 1) {
                         StringGraphNode<?> n = idToNd.get(m.id).iterator().next();
-                        for (StringGraphNode<?> child : n.getForwardNodes()) {
+                        for (StringGraphNode<?> child : n.getForwardChildren()) {
                             StringGraphNode<?> newChild = initializeNodeFromSource(child);
                             m.addForwardChild(newChild);
                             if (newChild instanceof OrStringGraphNode) {
-                                idToNfr.put(newChild.id, new HashSet<>(child.getForwardNodes()));
+                                idToNfr.put(newChild.id, new HashSet<>(child.getForwardChildren()));
                             } else {
                                 idToNfr.put(newChild.id, new HashSet<>());
                             }
@@ -585,7 +585,7 @@ public abstract class SGNUtils {
                         }
                     }
                     S_ul.remove(m);
-                    S_ul.addAll(m.getForwardNodes());
+                    S_ul.addAll(m.getForwardChildren());
                     S_sn.add(m);
                 }
 
@@ -681,8 +681,8 @@ public abstract class SGNUtils {
         Set<List<StringGraphNode<?>>> relation = new HashSet<>();
         relation.add(List.of(g1,g2));
         if (eDepth(g1,g2) || ePf(g1,g2)) {
-            Iterator<StringGraphNode<?>> v1Iterator = g1.getForwardNodes().iterator();
-            Iterator<StringGraphNode<?>> v2Iterator = g2.getForwardNodes().iterator();
+            Iterator<StringGraphNode<?>> v1Iterator = g1.getForwardChildren().iterator();
+            Iterator<StringGraphNode<?>> v2Iterator = g2.getForwardChildren().iterator();
             while(v1Iterator.hasNext() && v2Iterator.hasNext()) {
                 relation.addAll(correspondenceSetAux(v1Iterator.next(), v2Iterator.next()));
             }
@@ -723,7 +723,7 @@ public abstract class SGNUtils {
 
     private static Set<String> principalFunctors(StringGraphNode<?> v) {
         return v
-                .getForwardNodes()
+                .getForwardChildren()
                 .stream()
                 .filter(_v -> _v instanceof ConcatStringGraphNode)
                 .map(StringGraphNode::getLabel)
@@ -736,7 +736,7 @@ public abstract class SGNUtils {
                 .filter(pair -> {
                     StringGraphNode<?> _va = pair.get(0);
                     StringGraphNode<?> _va1 = pair.get(1);
-                    return _va.getForwardNodes().contains(v) && _va1.getForwardNodes().contains(v1);
+                    return _va.getForwardChildren().contains(v) && _va1.getForwardChildren().contains(v1);
                 })
                 .findFirst();
         return caOpt.orElseGet(ArrayList::new);

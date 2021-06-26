@@ -32,7 +32,7 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
     public List<String> getDenotation() {
         List<String> result = new ArrayList<>();
 
-        for (StringGraphNode<?> n : getForwardNodes()) {
+        for (StringGraphNode<?> n : getForwardChildren()) {
             for (String str : n.getDenotation()) {
                 if (
                     (result.size() == 1 && ConstValues.ALL_STRINGS.name().compareTo(result.get(0)) == 0)
@@ -49,7 +49,7 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
 
 	@Override
 	public Set<StringGraphNode<?>> getPrincipalNodes() {
-        return  getForwardNodes().stream()
+        return  getForwardChildren().stream()
                 .flatMap(s->s.getPrincipalNodes().stream())
                 .collect(Collectors.toSet());
     }
