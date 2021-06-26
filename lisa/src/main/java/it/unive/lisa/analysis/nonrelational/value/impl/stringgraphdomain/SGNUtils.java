@@ -287,16 +287,12 @@ public abstract class SGNUtils {
     public static boolean partialOrderAux(StringGraphNode<?> n, StringGraphNode<?> m, Set<Map.Entry<StringGraphNode<?>, StringGraphNode<?>>> edges) {
 
         // case (1)
-        if (edges.contains(StringGraphNode.createEdge(n, m)))
+        if (edges.stream().anyMatch(edge -> edge.getKey().equals(n) && edge.getValue().equals(m)))
             return true;
 
         // case (2)
-        else if (m instanceof ConstStringGraphNode) {
-            ConstValues constValue = ((ConstStringGraphNode)m).getValue();
-            if (ConstValues.MAX == constValue) {
-                return true;
-            }
-        }
+        else if (m instanceof ConstStringGraphNode && ConstValues.MAX.equals(((ConstStringGraphNode)m).getValue()))
+            return true;
 
         // case (3)
         else if (n instanceof ConcatStringGraphNode && m instanceof ConcatStringGraphNode) {
@@ -304,14 +300,12 @@ public abstract class SGNUtils {
             ConcatStringGraphNode concatM = (ConcatStringGraphNode)m;
             List<StringGraphNode<?>> childrenN = n.getChildren();
             List<StringGraphNode<?>> childrenM = m.getChildren();
-            if (Objects.equals(concatN.getValue(), concatM.getValue())) {
+            if (concatN.getLabel().equals(concatM.getLabel())) {
                 // add current edge to edgeSet
-                edges.add(StringGraphNode.createEdge(n, m));
+                edges.add(StringGraphNode.createEdge(n,m));
                 // for each i in [0,k] must hold: <=(n/i, m/i, edges+{m,n})
-                for (int i=0; i<concatN.getValue(); i++) {
-                    boolean isLessOrEqual = partialOrderAux(childrenN.get(i), childrenM.get(i), edges);
-                    if (!isLessOrEqual) return false;
-                }
+                for (int i = 0; i < concatN.getValue(); i++)
+                    if (!partialOrderAux(childrenN.get(i), childrenM.get(i), edges)) return false;
                 return true;
             }
         }
@@ -323,27 +317,21 @@ public abstract class SGNUtils {
             // add current edge to edgeSet
             edges.add(StringGraphNode.createEdge(n, m));
             // for each i in [0,k] must hold: <=(n/i, m, edges+{m,n})
-            for (int i=0; i<k; i++) {
-                boolean isLessOrEqual = partialOrderAux(children.get(i), m, edges);
-                if (!isLessOrEqual) return false;
-            }
+            for (int i = 0; i < k; i++)
+                if (!partialOrderAux(children.get(i), m, edges)) return false;
             return true;
         }
 
         // case (5)
         else if (m instanceof OrStringGraphNode) {
-            StringGraphNode<?> md = null;
+            Optional<StringGraphNode<?>> mdOpt = m
+                    .getPrincipalNodes()
+                    .stream()
+                    .filter(l -> l.getLabel().equals(n.getLabel()))
+                    .findFirst();
             // look for a node (named md) in prnd(m) such that lb(n) == lb(md)
-            for (StringGraphNode<?> prnd: m.getPrincipalNodes()) {
-                String prndLbl = prnd.getLabel();
-                if ( (prndLbl == null && n.getLabel() == null) ||
-                        (prndLbl != null && prnd.getLabel().equals(n.getLabel()))) {
-                    md = prnd; // found one
-                    break;
-                }
-            }
-
-            if (md != null) {
+            if (mdOpt.isPresent()) {
+                StringGraphNode<?> md = mdOpt.get();
                 edges.add(StringGraphNode.createEdge(n, m));
                 return partialOrderAux(n, md, edges);
             }
@@ -565,21 +553,21 @@ public abstract class SGNUtils {
                         int i = 0;
                         while(i < ((ConcatStringGraphNode)m).desiredNumberOfChildren) {
                             int finalI = i;
-                            Set<StringGraphNode<?>> iThChildren = idToNd
+                            Set<StringGraphEdge> iThChildren = idToNd
                                     .get(m.id)
                                     .stream()
                                     .filter(_n -> _n.getOutDegree() > finalI)
-                                    .map(_n -> (_n).getChildren().get(finalI))
+                                    .map(_n -> (_n).getChildrenEdges().get(finalI))
                                     .collect(Collectors.toSet());
-                            if (iThChildren.stream().anyMatch(_i -> _i instanceof ConstStringGraphNode && _i.getValue().equals(ConstValues.MAX))) {
+                            if (iThChildren.stream().anyMatch(_i -> _i.getNode() instanceof ConstStringGraphNode && _i.getNode().getValue().equals(ConstValues.MAX))) {
                                 StringGraphNode<?> newChild = new ConstStringGraphNode(ConstValues.MAX);
                                 m.addForwardChild(newChild);
-                                idToNd.put(newChild.id, iThChildren);
+                                idToNd.put(newChild.id, iThChildren.stream().map(StringGraphEdge::getNode).collect(Collectors.toSet()));
                             } else {
                                 StringGraphNode<?> newChild = new OrStringGraphNode();
                                 m.addForwardChild(newChild);
-                                idToNfr.put(newChild.id, iThChildren);
-                                idToNd.put(newChild.id, iThChildren);
+                                idToNfr.put(newChild.id, iThChildren.stream().map(StringGraphEdge::getNode).collect(Collectors.toSet()));
+                                idToNd.put(newChild.id, iThChildren.stream().map(StringGraphEdge::getNode).collect(Collectors.toSet()));
                             }
                             i++;
                         }
@@ -634,17 +622,8 @@ public abstract class SGNUtils {
 
     //========================================= WIDENING SECTION ======================================================
 
-    public static StringGraphNode<?> widening(StringGraphNode<?> g_old, StringGraphNode<?> g_new) {
-        OrStringGraphNode tmp = new OrStringGraphNode();
-        tmp.addForwardChild(g_old);
-        tmp.addForwardChild(g_new);
-        StringGraphNode<?> go = g_old;
-        normalize(g_new);
-        StringGraphNode<?> gn = normalize(tmp);
+    public static StringGraphNode<?> widening(StringGraphNode<?> go, StringGraphNode<?> gn) {
         if (gn != null) {
-            if (gn.isLessOrEqual(go))
-                return go;
-
             /* CYCLE INTRODUCTION RULE */
             Iterator<List<StringGraphNode<?>>> CIIterator = CI(go, gn).iterator();
             if (CIIterator.hasNext()) {
@@ -668,9 +647,8 @@ public abstract class SGNUtils {
                     return gn;
                 }
             }
-        } else {
-            return g_new;
         }
+        return go;
     }
 
     public static Set<List<StringGraphNode<?>>> correspondenceSet(StringGraphNode<?> g1, StringGraphNode<?> g2) {
@@ -790,5 +768,14 @@ public abstract class SGNUtils {
             }
         }
         return CR;
+    }
+
+    public static int treeDepth(StringGraphNode<?> node) {
+        if (node.getForwardChildren().size() == 0) {
+            return 1;
+        } else {
+            Set<Integer> depths = node.getForwardChildren().stream().map(c -> 1 + treeDepth(c)).collect(Collectors.toSet());
+            return Collections.max(depths);
+        }
     }
 }

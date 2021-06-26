@@ -1,5 +1,5 @@
 class sg {
-
+/*
     f_contains() {
         def x = "ciao";
         if (strcon(x,"c")) {
@@ -27,20 +27,20 @@ class sg {
         while (strcon(x,"u")) {
             x = strcat(x,"a");
         }
-    }
+    }*/
 
-    /*
+
     f_loop() {
         def x = "ciao";
         while (strcon(x,"c")) {
             x = strcat(x,"a");
         }
         x = strcat(x,"b");
-    }*/
+    }
 
 
 
-
+/*
     f_prog_1() {
         def y = 0;
         def query = strcat("SELECT *, (RETAIL/100) FROM"," INVENTORY WHERE ");
@@ -68,5 +68,5 @@ class sg {
         query = strcat(query, "6f");
         return query;
     }
-
+*/
 }

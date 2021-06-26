@@ -38,7 +38,6 @@ public abstract class StringGraphNode<V> implements Serializable {
      */
     public static StringGraphNode<?> create(String value) {
 		StringGraphNode<?> result;
-
 		value = SGNUtils.unquote(value);
 
 		if (value.length() == 0) {
@@ -59,7 +58,6 @@ public abstract class StringGraphNode<V> implements Serializable {
     	Map.Entry<T,V> createEdge(T n1, V n2) {
     	return new AbstractMap.SimpleEntry<>(n1,n2);
     }
-    
 
     public int getOutDegree() {
         return this.childrenEdges.size();

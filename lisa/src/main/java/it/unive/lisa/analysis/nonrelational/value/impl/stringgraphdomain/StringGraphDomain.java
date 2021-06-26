@@ -208,7 +208,12 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     @Override
     protected StringGraphDomain wideningAux(StringGraphDomain other) throws SemanticException {
-        return new StringGraphDomain(SGNUtils.widening(this.root, other.root));
+        OrStringGraphNode tmp = new OrStringGraphNode();
+        tmp.addForwardChild(this.root);
+        tmp.addForwardChild(other.root);
+        StringGraphNode<?> gn = SGNUtils.normalize(tmp);
+        StringGraphNode<?> widened = SGNUtils.widening(this.root, gn);
+        return new StringGraphDomain(widened);
     }
 
     @Override
