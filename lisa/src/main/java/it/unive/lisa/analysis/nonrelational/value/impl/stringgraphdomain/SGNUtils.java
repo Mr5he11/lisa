@@ -460,7 +460,12 @@ public abstract class SGNUtils {
     //==================================== NORMALIZATION SECTION ======================================================
 
     /**
-     * Normalization algorithm
+     * Normalization algorithm taken from <a href="https://lirias.kuleuven.be/bitstream/123456789/132040/1/cw108.pdf">
+     * Deriving descriptions of possible values of program variables by means of abstract interpretation: definitions and proofs.
+     * G. Jannsens, M. Bruynooghe, Report CW 108, April 1990 </a>.
+     * The algorithm 4.2 of such paper describes the steps to take in order to obtain a restricted type graph.
+     * We omitted the branch 4.a, since its purpose was to assure that the resulted graph didn't violate the depth restriction.
+     * We do not need the latter property.
      *
      * @param node the node to be normalized
      * @return the normalized node
@@ -491,7 +496,10 @@ public abstract class SGNUtils {
                     // CASE 1
                     StringGraphNode<?> mg = mgOpt.get();
                     ulBarc(m, mg, S_ul);
-                } else if (m instanceof SimpleStringGraphNode || (m instanceof ConcatStringGraphNode && ((ConcatStringGraphNode)m).getValue() == 0 && ((ConcatStringGraphNode)m).desiredNumberOfChildren == 0)) {
+                } else if (m instanceof SimpleStringGraphNode
+                        || (m instanceof ConcatStringGraphNode
+                        && ((ConcatStringGraphNode)m).getValue() == 0
+                        && ((ConcatStringGraphNode)m).desiredNumberOfChildren == 0)) {
                     // CASE 2
                     S_ul.remove(m);
                     S_sn.add(m);
@@ -585,6 +593,8 @@ public abstract class SGNUtils {
         }
     }
 
+    /* AUXILIARY FUNCTIONS FOR NORMALIZATION ALGORITHM */
+
     private static boolean safeAnc(StringGraphNode<?> m, HashMap<String, Set<StringGraphNode<?>>> fn, StringGraphNode<?> mg) {
         List<StringGraphNode<?>> mgToMPath = getForwardPath(mg,m);
         if (mgToMPath.size() > 0) {
@@ -626,6 +636,15 @@ public abstract class SGNUtils {
 
     //========================================= WIDENING SECTION ======================================================
 
+    /**
+     * Widening algorithm taken from the appendix of <a href="https://doi.org/10.1145/773473.178479">
+     * P. Van Hentenryck, A. Cortesi, and B. Le Charlier. 1994. Type analysis of Prolog using type graphs.
+     * SIGPLAN Not. 29, 6 (June 1994)</a>.
+     *
+     * @param go the root of the old graph
+     * @param gn the root of the graph obtained normalizing the or between go and a new provided graph
+     * @return the widened graph
+     */
     public static StringGraphNode<?> widening(StringGraphNode<?> go, StringGraphNode<?> gn) {
         if (gn != null) {
             /* CYCLE INTRODUCTION RULE */
@@ -655,7 +674,9 @@ public abstract class SGNUtils {
         return go;
     }
 
-    public static Set<List<StringGraphNode<?>>> correspondenceSet(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+    /* AUXILIARY FUNCTIONS FOR WIDENING ALGORITHM */
+
+    private static Set<List<StringGraphNode<?>>> correspondenceSet(StringGraphNode<?> g1, StringGraphNode<?> g2) {
         return correspondenceSetAux(g1, g2);
     }
 
@@ -672,14 +693,14 @@ public abstract class SGNUtils {
         return relation;
     }
 
-    public static Set<List<StringGraphNode<?>>> topologicalClashes(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+    private static Set<List<StringGraphNode<?>>> topologicalClashes(StringGraphNode<?> g1, StringGraphNode<?> g2) {
         if (!eDepth(g1, g2) && ePf(g1, g2)) {
             return correspondenceSet(g1, g2);
         }
         return new HashSet<>();
     }
 
-    public static Set<List<StringGraphNode<?>>> wideningTopologicalClashes(StringGraphNode<?> g1, StringGraphNode<?> g2) {
+    private static Set<List<StringGraphNode<?>>> wideningTopologicalClashes(StringGraphNode<?> g1, StringGraphNode<?> g2) {
         return topologicalClashes(g1, g2)
                 .stream()
                 .filter(pair -> {
@@ -772,14 +793,5 @@ public abstract class SGNUtils {
             }
         }
         return CR;
-    }
-
-    public static int treeDepth(StringGraphNode<?> node) {
-        if (node.getForwardChildren().size() == 0) {
-            return 1;
-        } else {
-            Set<Integer> depths = node.getForwardChildren().stream().map(c -> 1 + treeDepth(c)).collect(Collectors.toSet());
-            return Collections.max(depths);
-        }
     }
 }
