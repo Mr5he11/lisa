@@ -538,11 +538,11 @@ public abstract class SGNUtils {
                     // CASE 4
                     if (idToNd.get(m.id).size() == 1) {
                         StringGraphNode<?> n = idToNd.get(m.id).iterator().next();
-                        for (StringGraphNode<?> child : n.getForwardChildren()) {
+                        for (StringGraphNode<?> child : n.getChildren()) {
                             StringGraphNode<?> newChild = initializeNodeFromSource(child);
                             m.addForwardChild(newChild);
                             if (newChild instanceof OrStringGraphNode) {
-                                idToNfr.put(newChild.id, new HashSet<>(child.getForwardChildren()));
+                                idToNfr.put(newChild.id, new HashSet<>(child.getChildren()));
                             } else {
                                 idToNfr.put(newChild.id, new HashSet<>());
                             }
@@ -553,27 +553,27 @@ public abstract class SGNUtils {
                         int i = 0;
                         while(i < ((ConcatStringGraphNode)m).desiredNumberOfChildren) {
                             int finalI = i;
-                            Set<StringGraphEdge> iThChildren = idToNd
+                            Set<StringGraphNode<?>> iThChildren = idToNd
                                     .get(m.id)
                                     .stream()
                                     .filter(_n -> _n.getOutDegree() > finalI)
-                                    .map(_n -> (_n).getChildrenEdges().get(finalI))
+                                    .map(_n -> (_n).getChildren().get(finalI))
                                     .collect(Collectors.toSet());
-                            if (iThChildren.stream().anyMatch(_i -> _i.getNode() instanceof ConstStringGraphNode && _i.getNode().getValue().equals(ConstValues.MAX))) {
+                            if (iThChildren.stream().anyMatch(_i -> _i instanceof ConstStringGraphNode && _i.getValue().equals(ConstValues.MAX))) {
                                 StringGraphNode<?> newChild = new ConstStringGraphNode(ConstValues.MAX);
                                 m.addForwardChild(newChild);
-                                idToNd.put(newChild.id, iThChildren.stream().map(StringGraphEdge::getNode).collect(Collectors.toSet()));
+                                idToNd.put(newChild.id, iThChildren);
                             } else {
                                 StringGraphNode<?> newChild = new OrStringGraphNode();
                                 m.addForwardChild(newChild);
-                                idToNfr.put(newChild.id, iThChildren.stream().map(StringGraphEdge::getNode).collect(Collectors.toSet()));
-                                idToNd.put(newChild.id, iThChildren.stream().map(StringGraphEdge::getNode).collect(Collectors.toSet()));
+                                idToNfr.put(newChild.id, iThChildren);
+                                idToNd.put(newChild.id, iThChildren);
                             }
                             i++;
                         }
                     }
                     S_ul.remove(m);
-                    S_ul.addAll(m.getForwardChildren());
+                    S_ul.addAll(m.getChildren());
                     S_sn.add(m);
                 }
 
@@ -591,7 +591,11 @@ public abstract class SGNUtils {
             mgToMPath.add(mg);
             mgToMPath.remove(0);
         }
-        return mg.isProperAncestor(m) && fn.get(mg.id) == fn.get(m.id) && mgToMPath.stream().anyMatch(mf -> !(mf instanceof OrStringGraphNode));
+        Set<StringGraphNode> intersection = new HashSet<>(fn.get(mg.id));
+        intersection.retainAll(fn.get(m.id));
+        return mg.isProperAncestor(m)
+                && (intersection.size() == fn.get(m.id).size() && intersection.size() == fn.get(mg.id).size())
+                && mgToMPath.stream().anyMatch(mf -> !(mf instanceof OrStringGraphNode));
     }
 
     private static boolean involvedOverlap(StringGraphNode<?> m, StringGraphNode<?> n, HashMap<String, Set<StringGraphNode<?>>> nfr) {
