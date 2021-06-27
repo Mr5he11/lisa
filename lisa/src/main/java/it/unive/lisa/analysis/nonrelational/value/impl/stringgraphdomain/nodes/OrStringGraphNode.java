@@ -15,19 +15,6 @@ public class OrStringGraphNode extends StringGraphNode<Void> {
         this.value = null;
     }
 
-    /*
-    @Override
-	public String toString() {
-        return "OR"
-                + getForwardNodes().stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", ", " [", (getBackwardNodes().isEmpty() ? "" : ", ")))
-                + getBackwardNodes().stream()
-                    .map(StringGraphNode::getLabel)
-                    .collect(Collectors.joining(", ", "", "] "));
-	}
-	*/
-
 	@Override
     public List<String> getDenotation() {
         List<String> result = new ArrayList<>();

@@ -41,11 +41,6 @@ public class ConstStringGraphNode extends StringGraphNode<ConstStringGraphNode.C
         return List.of(this.value.name());
     }
 
-    /*
-    @Override
-    public String toString() { return this.getLabel(); }
-     */
-
     @Override
     public String getLabel() {
         return this.value != null ? this.value.name() : null ;

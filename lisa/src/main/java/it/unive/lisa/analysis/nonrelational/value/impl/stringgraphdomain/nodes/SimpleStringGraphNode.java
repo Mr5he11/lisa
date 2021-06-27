@@ -35,10 +35,6 @@ public class SimpleStringGraphNode extends StringGraphNode<String> {
         return List.of(this.value);
     }
 
-    /*
-    @Override
-    public String toString() { return this.getLabel(); }
-     */
 
     @Override
     public String getLabel() {

@@ -26,33 +26,6 @@ public abstract class StringGraphNode<V> implements Serializable {
 		this.id = "id_" + StringGraphNode.counter;
 		StringGraphNode.counter += 1;
 	}
-	
-	/**
-     * Creates a node starting from the string value parameter.
-     * It checks whether the string has only one character, producing a {@link SimpleStringGraphNode}
-     * or if it has multiple characters. If so, this produces a String Graph with a {@link ConcatStringGraphNode} as root
-     * and all characters of the string as {@link SimpleStringGraphNode} nodes
-     *
-     * @param value parameter included in the created {@link StringGraphNode}
-     * @return a {@link SimpleStringGraphNode} or a ConcatNode {@link ConcatStringGraphNode}
-     */
-    public static StringGraphNode<?> create(String value) {
-		StringGraphNode<?> result;
-		value = SGNUtils.unquote(value);
-
-		if (value.length() == 0) {
-			// EMPTY node if no value
-			result = new ConstStringGraphNode(ConstValues.EMPTY);
-		} else if (value.length() == 1) {
-			// SIMPLE node if 1 char
-			result = new SimpleStringGraphNode(value);
-		} else {
-			// CONCAT node if 2+ chars
-			result = new ConcatStringGraphNode(value);
-		}
-
-		return result;
-	}
     
     public static <T extends StringGraphNode<?>, V extends StringGraphNode<?>>
     	Map.Entry<T,V> createEdge(T n1, V n2) {
@@ -162,6 +135,61 @@ public abstract class StringGraphNode<V> implements Serializable {
 
 	public abstract String getLabel();
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof StringGraphNode)) return false;
+		StringGraphNode<?> that = (StringGraphNode<?>) o;
+		return Objects.equals(id, that.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
+	}
+
+	/**
+	 * Generates the dot representation of the string graph rooted in this.
+	 *
+	 * @return the dot representation of this
+	 */
+	@Override
+	public String toString() {
+		return "digraph string_graph_node_" + this.id + " { " + String.join("", this.toStringAux()) + " }";
+		//return getLabel();
+	}
+
+	public Set<String> toStringAux() {
+		Set<String> result = new LinkedHashSet<>();
+		result.add(this.id + " [label=\"" + this.getLabel() + "\"]\n"); // TODO getLabel()
+		for (StringGraphNode<?> child : this.getForwardChildren()) {
+			result.addAll(child.toStringAux());
+			result.add(this.id+ " -> " + child.id + "\n");
+		}
+		for (StringGraphNode<?> child : this.getBackwardChildren()) {
+			result.add(this.id + " -> " + child.id + " [style=dashed]\n");
+		}
+		return result;
+	}
+
+	/**
+	 * Creates a node starting from the string value parameter.
+	 * It checks whether the string has only one character, producing a {@link SimpleStringGraphNode}
+	 * or if it has multiple characters. If so, this produces a String Graph with a {@link ConcatStringGraphNode} as root
+	 * and all characters of the string as {@link SimpleStringGraphNode} nodes
+	 *
+	 * @param value parameter included in the created {@link StringGraphNode}
+	 * @return a {@link SimpleStringGraphNode} or a ConcatNode {@link ConcatStringGraphNode}
+	 */
+	public static StringGraphNode<?> create(String value) {
+		value = SGNUtils.unquote(value);
+		if (value.length() == 0)
+			return new ConstStringGraphNode(ConstValues.EMPTY);
+		if (value.length() == 1)
+			return new SimpleStringGraphNode(value);
+		return new ConcatStringGraphNode(value);
+	}
+
 	/**
 	 * Produces the denotation of the string graph having root in the current object.
 	 * The denotation of a string graph is the representation of all possible finite strings that can be represented
@@ -211,17 +239,32 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return Set.of(this);
 	}
 
+	/**
+	 * Generates the set of principal labels of this, starting from its principal nodes.
+	 *
+	 * @return a set of strings representing the principal labels of this
+	 */
 	public Set<String> getPrincipalLabels() {
 		return getPrincipalNodes().stream()
 				.map(StringGraphNode::getLabel)
 				.collect(Collectors.toSet());
 	}
 
-
+	/**
+	 * Computes if this is less or equal then other, more in-depth documentation can be found at {@link SGNUtils}.
+	 *
+	 * @param other the node this should be compared with
+	 * @return true if this is less or equal to other, false otherwise
+	 */
 	public boolean isLessOrEqual(StringGraphNode<?> other) {
 		return SGNUtils.partialOrderAux(this, other, new HashSet<>());
 	}
 
+	/**
+	 * Computes the depth of a node, starting from its root
+	 *
+	 * @return the depth of the node
+	 */
 	public int getDepth() {
 		StringGraphNode<?> n = this;
 		int depth = 0;
@@ -232,14 +275,11 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return depth;
 	}
 
-	public StringGraphNode<?> getRoot() {
-		StringGraphNode<?> root = this;
-		while(!root.isRoot()) {
-			root = root.getForwardParent();
-		}
-		return root;
-	}
-
+	/**
+	 * Computes the chain of ancestors of this
+	 *
+	 * @return a list of all ancestors of this
+	 */
 	public List<StringGraphNode<?>> getAncestors() {
 		StringGraphNode<?> root = this;
 		List<StringGraphNode<?>> ancestors = new ArrayList<>();
@@ -250,52 +290,31 @@ public abstract class StringGraphNode<V> implements Serializable {
 		return ancestors;
 	}
 
+	/**
+	 * Says if this is an ancestor of descendant
+	 *
+	 * @param descendant the node that might be descendant of this
+	 * @return true if this is an ancestor of descendant, false otherwise
+	 */
+	public boolean isAncestor(StringGraphNode<?> descendant) {
+		return isProperAncestor(descendant) || this.equals(descendant);
+	}
+
+	/**
+	 * Says if this is a proper ancestor of descendant
+	 *
+	 * @param descendant the node that might be descendant of this
+	 * @return true if this is a proper ancestor of descendant, false otherwise
+	 */
+	public boolean isProperAncestor(StringGraphNode<?> descendant) {
+		return SGNUtils.getForwardPath(this, descendant).size() > 0;
+	}
+
 	public Set<StringGraphNode<?>> is() {
 		return this.is;
 	}
 
 	public Set<StringGraphNode<?>> ris() {
 		return this.is.stream().filter(n -> ConstValues.MAX != n.getValue()).collect(Collectors.toSet());
-	}
-
-	public boolean isAncestor(StringGraphNode<?> descendant) {
-		return isProperAncestor(descendant) || this.equals(descendant);
-	}
-
-	public boolean isProperAncestor(StringGraphNode<?> descendant) {
-		return SGNUtils.getForwardPath(this, descendant).size() > 0;
-	}
-
-	/* Since each node can have at most one forward parent, a node can be uniquely identified by its value and its children */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof StringGraphNode)) return false;
-		StringGraphNode<?> that = (StringGraphNode<?>) o;
-		return Objects.equals(id, that.id);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(id);
-	}
-
-	@Override
-	public String toString() {
-		return "digraph string_graph_node_" + this.id + " { " + String.join("", this.toStringAux()) + " }";
-		//return getLabel();
-	}
-
-	public Set<String> toStringAux() {
-		Set<String> result = new LinkedHashSet<>();
-		result.add(this.id + " [label=\"" + this.getLabel() + "\"]\n"); // TODO getLabel()
-		for (StringGraphNode<?> child : this.getForwardChildren()) {
-			result.addAll(child.toStringAux());
-			result.add(this.id+ " -> " + child.id + "\n");
-		}
-		for (StringGraphNode<?> child : this.getBackwardChildren()) {
-			result.add(this.id + " -> " + child.id + " [style=dashed]\n");
-		}
-		return result;
 	}
 }
