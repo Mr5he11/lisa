@@ -212,7 +212,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         tmp.addForwardChild(this.root);
         tmp.addForwardChild(other.root);
         StringGraphNode<?> gn = SGNUtils.normalize(tmp);
-        StringGraphNode<?> widened = SGNUtils.widening(this.root, gn);
+        StringGraphNode<?> widened = SGNUtils.normalize(SGNUtils.widening(this.root, gn));
         return new StringGraphDomain(widened);
     }
 

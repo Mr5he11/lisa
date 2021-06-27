@@ -42,7 +42,7 @@ public abstract class FixpointGraph<G extends FixpointGraph<G, N, E>,
 	 * calls to {@link Lattice#lub(Lattice)} gets replaced with
 	 * {@link Lattice#widening(Lattice)}.
 	 */
-	public static final int DEFAULT_WIDENING_THRESHOLD = 2;
+	public static final int DEFAULT_WIDENING_THRESHOLD = 5;
 
 	/**
 	 * Builds the graph.
