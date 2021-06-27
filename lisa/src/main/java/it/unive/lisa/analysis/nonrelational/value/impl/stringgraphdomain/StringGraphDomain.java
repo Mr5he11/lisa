@@ -72,20 +72,24 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
     }
 
     /**
-     * APPENDIX
-     * of "DERIVING DESCRIPTIONS OF POSSIBLE VALUES OF PROGRAM VARIABLES BY MEANS OF ABSTRACT INTERPRETATION"
-     * by G. JANSSENS AND M. BRUYNOOGHE
+     * Intersection algorithm taken from the appendix of <a href="https://doi.org/10.1016/0743-1066(92)90032-X">
+     * G. Janssens, M. Bruynooghe,
+     * Deriving descriptions of possible values of program variables by means of abstract interpretation,
+     * The Journal of Logic Programming,
+     * Volume 13, Issues 2–3,
+     * 1992,</a>.
+     *
+     * @param other the abstract domain element which root should be intersected with this.root
+     * @return an abstract domain element representing the intersection (and so, the glb) between this.root and other.root
      */
     @Override
     public StringGraphDomain glbAux(StringGraphDomain other) {
+        /* INITIALIZATION */
         // Since the expected denotation should be an intersection (hence a list), the node must be an OR node
         StringGraphNode<?> l0 = new OrStringGraphNode();
-
-        /* INITIALIZATION */
-        Set<StringGraphNode<?>> S_sn = new HashSet<>();
-        Set<StringGraphNode<?>> S_ul = new HashSet<>();
+        Set<StringGraphNode<?>> S_sn = new LinkedHashSet<>();
+        Set<StringGraphNode<?>> S_ul = new LinkedHashSet<>();
         S_ul.add(l0);
-
         l0.is().add(this.root);
         l0.is().add(other.root);
 
@@ -93,11 +97,9 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         do {
             // select random l from S_ul
             StringGraphNode<?> l = S_ul.iterator().next();
-
             // RULE 1
             if (!S_sn.isEmpty()) {
                 StringGraphNode<?> lp = l.getForwardParent();
-
                 // check if exists an OR Node from a generic lg in S_sn to l.parent
                 StringGraphNode<?> lg = null;
                 for (StringGraphNode<?> _lg : S_sn) {
@@ -105,7 +107,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
                     if (path.stream().anyMatch(p -> !(p instanceof OrStringGraphNode))) {
                         lg = _lg;
                         break;
-
                     }
                 }
 
@@ -143,14 +144,9 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
                     li.is().add(mi);
                     li.is().addAll(ris_no_m);
                     S_ul.add(li);
-
-                    /*StringGraphNode<?> childToRemove = orNode.getForwardNodes().get(idx);
-                    orNode.addForwardChild(idx, li);
-                    orNode.removeChild(childToRemove);*/
+                    l.addForwardChild(li);
                 }
-
                 continue;
-
             }
 
             // RULE 4
@@ -158,48 +154,38 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
             if (opt.isPresent()) {
                 StringGraphNode<?> n = opt.get();
 
-                boolean boh = l.ris().stream().filter(x -> !x.equals(n)).allMatch(m -> {
-                    Optional<StringGraphNode<?>> md_opt = m.getPrincipalNodes().stream().filter(md -> md.getLabel().equals(n.getLabel())).findAny();
-                    return md_opt.isPresent();
-                });
+                boolean labelFound = l.ris().stream().filter(x -> !x.equals(n)).allMatch(m ->
+                        m.getPrincipalNodes().stream().anyMatch(md -> md.getLabel().equals(n.getLabel()))
+                );
 
-                if (boh) {
+                if (labelFound) {
                     SGNUtils.replace(l, n);
                     S_ul.remove(l);
                     S_sn.add(n);
 
-
                     if (n instanceof ConcatStringGraphNode) {
 
                         final Set<StringGraphNode<?>> S_md = new HashSet<>();
-                        l.ris().stream().filter(x -> !x.equals(n)).forEach(m -> {
-                            Optional<StringGraphNode<?>> md_opt = m.getPrincipalNodes().stream().filter(md -> md.getLabel().equals(n.getLabel())).findAny();
-                            md_opt.ifPresent(S_md::add);
-                        });
-
+                        l.ris().stream().filter(x -> !x.equals(n)).forEach(m ->
+                            m.getPrincipalNodes().stream().filter(md -> md.getLabel().equals(n.getLabel())).findAny().ifPresent(S_md::add)
+                        );
 
                         for (int idx = 0; idx < n.getForwardChildren().size(); idx++) {
                             StringGraphNode<?> ni = n.getForwardChildren().get(idx);
                             StringGraphNode<?> li = new OrStringGraphNode();
                             li.is().add(ni);
-
+                            l.addForwardChild(li);
                             int finalIdx = idx;
                             S_md.forEach(m ->  li.is().add(m.getForwardChildren().get(finalIdx)));
-
                             S_ul.add(li);
-
-                            //SGNUtils.replace(ni, li);
                         }
-
                     }
-
                 } else {
                     ConstStringGraphNode minNode = new ConstStringGraphNode(ConstValues.MIN);
                     SGNUtils.replace(l, minNode);
                     S_ul.remove(l);
                     S_sn.add(minNode);
                 }
-
             }
         } while (!S_ul.isEmpty());
 
